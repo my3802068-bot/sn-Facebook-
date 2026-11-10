@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SN Facebook - Exact Replica & Windows Mini Tool</title>
+    <style>
+        :root {
+            --fb-blue: #1877F2;
+            --fb-blue-dark: #0d65d9;
+            --fb-bg: #F0F2F5;
+            --fb-card-bg: #FFFFFF;
+            --fb-text: #050505;
+            --fb-subtext: #65676B;
+            --fb-divider: #CED0D4;
+            --fb-hover: #E4E6EB;
+            --win-bg: #202023;
+            --win-titlebar: #18181B;
+            --win-border: #3F3F46;
+            --win-blue: #0078D4;
+            --win-red: #E81123;
+        }
+
+        body.dark-mode {
+            --fb-bg: #18191A;
+            --fb-card-bg: #242526;
+            --fb-text: #E4E6EB;
+            --fb-subtext: #B0B3B8;
+            --fb-divider: #3A3B3C;
+            --fb-hover: #3A3B3C;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--fb-bg);
+            color: var(--fb-text);
+            overflow: hidden;
+        }
+
+        #app-root {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top Facebook Header */
+        .fb-header {
+            background: var(--fb-card-bg);
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+        }
+
+        .fb-header .logo {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--fb-blue);
+            letter-spacing: -1px;
+            cursor: pointer;
+        }
+
+        .fb-header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-circle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--fb-hover);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--fb-text);
+            cursor: pointer;
+        }
+
+        /* Navigation Tab Bar */
+        .fb-tabs {
+            background: var(--fb-card-bg);
+            display: flex;
+            border-bottom: 1px solid var(--fb-divider);
+            z-index: 99;
+        }
+
+        .fb-tab {
+            flex: 1;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 20px;
+            color: var(--fb-subtext);
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fb-tab.active {
+            color: var(--fb-blue);
+            border-bottom-color: var(--fb-blue);
+        }
+
+        /* Scrollable Feed Container */
+        #feed-scroll-container {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 40px;
+        }
+
+        /* Create Post Card */
+        .create-post-card {
+            background: var(--fb-card-bg);
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .create-post-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--fb-blue);
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .post-input-fake {
+            flex: 1;
+            background: var(--fb-bg);
+            padding: 10px 16px;
+            border-radius: 20px;
+            color: var(--fb-subtext);
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .create-post-actions {
+            display: flex;
+            justify-content: space-around;
+            padding-top: 10px;
+            margin-top: 10px;
+            border-top: 1px solid var(--fb-divider);
+        }
+
+        .create-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--fb-subtext);
+            cursor: pointer;
+        }
+
+        /* Stories Carousel */
+        .stories-carousel {
+            background: var(--fb-card-bg);
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-bottom: 8px;
+        }
+
+        .stories-carousel::-webkit-scrollbar {
+            display: none;
+        }
+
+        .story-box {
+            width: 100px;
+            height: 160px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            position: relative;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .story-avatar-ring {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--fb-blue);
+            background: rgba(255, 255, 255, 0.9);
+            color: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* Post Card */
+        .fb-post-card {
+            background: var(--fb-card-bg);
+            margin-bottom: 8px;
+            padding: 12px 0 6px 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 12px 10px 12px;
+        }
+
+        .post-header-info {
+            flex: 1;
+        }
+
+        .author-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--fb-text);
+        }
+
+        .post-meta {
+            font-size: 11px;
+            color: var(--fb-subtext);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .post-body-text {
+            font-size: 14px;
+            line-height: 1.45;
+            color: var(--fb-text);
+            padding: 0 12px 10px 12px;
+            white-space: pre-wrap;
+        }
+
+        .post-colored-bg {
+            padding: 40px 16px;
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .post-stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 12px 8px 12px;
+            font-size: 12px;
+            color: var(--fb-subtext);
+            border-bottom: 1px solid var(--fb-divider);
+        }
+
+        .post-actions-row {
+            display: flex;
+            justify-content: space-around;
+            padding-top: 4px;
+        }
+
+        .post-interactive-btn {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--fb-subtext);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .post-interactive-btn.liked {
+            color: var(--fb-blue);
+        }
+
+        .post-interactive-btn:active {
+            background: var(--fb-hover);
+        }
+
+        /* ========================================================
+           DRAGGABLE FLOATING "SN" WINDOWS MINI TOOL
+           ======================================================== */
+        #sn-floating-container {
+            position: fixed;
+            top: 75px;
+            right: 15px;
+            z-index: 999999;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* Minimized Capsule Badge */
+        #sn-badge {
+            background: #18181B;
+            border: 2px solid #0078D4;
+            border-radius: 30px;
+            padding: 7px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            cursor: move;
+            transition: transform 0.1s ease;
+        }
+
+        #sn-badge:active {
+            transform: scale(0.96);
+        }
+
+        .win-logo-grid {
+            display: grid;
+            grid-template-columns: 6px 6px;
+            gap: 2px;
+        }
+
+        .win-box {
+            width: 6px;
+            height: 6px;
+            border-radius: 1px;
+        }
+        .wb-1 { background: #00A4EF; }
+        .wb-2 { background: #0078D4; }
+        .wb-3 { background: #2B579A; }
+        .wb-4 { background: #00B7C3; }
+
+        .sn-label-text {
+            color: #FFFFFF;
+            font-weight: 900;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        .sn-quick-reload-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #27272A;
+            color: #00D2FF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        /* Expanded "Windows Mini" Floating App Window */
+        #sn-window {
+            display: none;
+            width: 290px;
+            background: var(--win-bg);
+            border: 1px solid var(--win-border);
+            border-radius: 12px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.65);
+            overflow: hidden;
+            animation: zoomFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes zoomFadeIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .win-titlebar {
+            background: linear-gradient(90deg, #18181B, #27272A);
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: move;
+            border-bottom: 1px solid #333338;
+        }
+
+        .win-title-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .win-title-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .win-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: transparent;
+            border: none;
+            color: #A1A1AA;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .win-btn:hover {
+            background: #3F3F46;
+            color: white;
+        }
+
+        .win-close:hover {
+            background: var(--win-red) !important;
+            color: white !important;
+        }
+
+        .win-content {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .win-address-bar {
+            background: #27272A;
+            border-radius: 6px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #D4D4D8;
+        }
+
+        .green-dot {
+            width: 7px;
+            height: 7px;
+            background: #22C55E;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .win-section-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: #71717A;
+            letter-spacing: 0.8px;
+        }
+
+        /* The 2 Primary Action Buttons: RELOAD & CLEAR DATA */
+        .win-primary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn-action-reload {
+            background: var(--fb-blue);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(24, 119, 242, 0.35);
+        }
+
+        .btn-action-reload:active {
+            transform: scale(0.97);
+        }
+
+        .btn-action-clear {
+            background: #DC2626;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+        }
+
+        .btn-action-clear:active {
+            transform: scale(0.97);
+        }
+
+        /* Secondary Grid */
+        .win-tools-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn-tool {
+            background: #27272A;
+            color: #E4E6EB;
+            border: 1px solid #3F3F46;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .btn-tool:active {
+            background: #3F3F46;
+        }
+
+        .win-footer-hint {
+            text-align: center;
+            font-size: 10px;
+            color: #71717A;
+            margin-top: 2px;
+        }
+
+        /* Modal Dialog for Clear Data */
+        #confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.65);
+            z-index: 1000000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: var(--fb-card-bg);
+            border-radius: 12px;
+            max-width: 320px;
+            width: 100%;
+            padding: 18px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--fb-text);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-body {
+            font-size: 13px;
+            color: var(--fb-subtext);
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+
+        .modal-btn-cancel {
+            background: var(--fb-hover);
+            color: var(--fb-text);
+        }
+
+        .modal-btn-delete {
+            background: #DC2626;
+            color: white;
+        }
+
+        /* Toast Notification */
+        #sn-toast {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: #18181B;
+            color: #FFFFFF;
+            border: 1px solid #0078D4;
+            border-radius: 20px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            z-index: 1000001;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        #sn-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-root">
+        <!-- Top Facebook Header -->
+        <header class="fb-header">
+            <span class="logo" onclick="window.scrollTo({top:0, behavior:'smooth'})">facebook</span>
+            <div class="fb-header-actions">
+                <button class="icon-circle-btn" onclick="openSearch()">🔍</button>
+                <button class="icon-circle-btn" onclick="openMessenger()">💬</button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="fb-tabs">
+            <div class="fb-tab active" onclick="switchTab(this, 'feed')">🏠</div>
+            <div class="fb-tab" onclick="switchTab(this, 'friends')">👥</div>
+            <div class="fb-tab" onclick="switchTab(this, 'watch')">📺</div>
+            <div class="fb-tab" onclick="switchTab(this, 'marketplace')">🏪</div>
+            <div class="fb-tab" onclick="switchTab(this, 'notif')">🔔</div>
+            <div class="fb-tab" onclick="switchTab(this, 'menu')">☰</div>
+        </nav>
+
+        <!-- Scrollable Feed Area -->
+        <div id="feed-scroll-container">
+            <!-- Create Post Card -->
+            <div class="create-post-card">
+                <div class="create-post-top">
+                    <div class="user-avatar">SN</div>
+                    <div class="post-input-fake" onclick="openPostModal()">What's on your mind? (আপনার মনে কি আছে?)</div>
+                </div>
+                <div class="create-post-actions">
+                    <button class="create-action-btn" onclick="openPostModal()"><span style="color:#F02849;">🎥</span> Live</button>
+                    <button class="create-action-btn" onclick="openPostModal()"><span style="color:#45BD62;">🖼️</span> Photo</button>
+                    <button class="create-action-btn" onclick="openPostModal()"><span style="color:#8E24AA;">📹</span> Room</button>
+                </div>
+            </div>
+
+            <!-- Stories Carousel -->
+            <div class="stories-carousel">
+                <div class="story-box" style="background: linear-gradient(180deg, #1877F2, #0D5CB6);">
+                    <div class="story-avatar-ring">➕</div>
+                    <span>Create Story<br><small style="font-weight:normal;">You</small></span>
+                </div>
+                <div class="story-box" style="background: linear-gradient(135deg, #8E24AA, #4A148C);">
+                    <div class="story-avatar-ring">T</div>
+                    <span>Tanvir Ahmed<br><small style="font-weight:normal;">2h ago</small></span>
+                </div>
+                <div class="story-box" style="background: linear-gradient(135deg, #00897B, #004D40);">
+                    <div class="story-avatar-ring">R</div>
+                    <span>Rahim Islam<br><small style="font-weight:normal;">5h ago</small></span>
+                </div>
+                <div class="story-box" style="background: linear-gradient(135deg, #E65100, #BF360C);">
+                    <div class="story-avatar-ring">S</div>
+                    <span>Shakil Khan<br><small style="font-weight:normal;">7h ago</small></span>
+                </div>
+                <div class="story-box" style="background: linear-gradient(135deg, #1E88E5, #0D47A1);">
+                    <div class="story-avatar-ring">B</div>
+                    <span>Tech Bangladesh<br><small style="font-weight:normal;">10h ago</small></span>
+                </div>
+            </div>
+
+            <!-- Posts List Container -->
+            <div id="posts-list"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================
+         DRAGGABLE FLOATING "SN" WINDOWS MINI TOOL
+         ======================================================== -->
+    <div id="sn-floating-container">
+        <!-- Minimized Floating Badge -->
+        <div id="sn-badge" onclick="openSnTool()">
+            <div class="win-logo-grid">
+                <div class="win-box wb-1"></div>
+                <div class="win-box wb-2"></div>
+                <div class="win-box wb-3"></div>
+                <div class="win-box wb-4"></div>
+            </div>
+            <span class="sn-label-text">SN</span>
+            <div class="sn-quick-reload-btn" onclick="quickReload(event)" title="Quick Reload">🔄</div>
+        </div>
+
+        <!-- Expanded Windows Mini App Window -->
+        <div id="sn-window">
+            <div class="win-titlebar" id="sn-drag-bar">
+                <div class="win-title-info">
+                    <div class="win-logo-grid">
+                        <div class="win-box wb-1"></div>
+                        <div class="win-box wb-2"></div>
+                        <div class="win-box wb-3"></div>
+                        <div class="win-box wb-4"></div>
+                    </div>
+                    <span>SN • Windows Mini Tool</span>
+                </div>
+                <div class="win-title-controls">
+                    <button class="win-btn" onclick="closeSnTool()" title="Minimize">─</button>
+                    <button class="win-btn win-close" onclick="closeSnTool()" title="Close">✕</button>
+                </div>
+            </div>
+
+            <div class="win-content">
+                <div class="win-address-bar">
+                    <span><span class="green-dot"></span>m.facebook.com</span>
+                    <span style="color:#38BDF8; cursor:pointer;" onclick="resetPos()">Reset Pos</span>
+                </div>
+
+                <div class="win-section-title">QUICK ACTIONS (প্রধান বাটন)</div>
+
+                <!-- RELOAD & CLEAR DATA BUTTONS -->
+                <div class="win-primary-grid">
+                    <button class="btn-action-reload" onclick="handleReload()">
+                        <span id="spin-reload-icon">🔄</span> Reload
+                    </button>
+                    <button class="btn-action-clear" onclick="openClearConfirmModal()">
+                        <span>🧹</span> Clear Data
+                    </button>
+                </div>
+
+                <div class="win-section-title">EXTRA CONTROLS</div>
+
+                <div class="win-tools-grid">
+                    <button class="btn-tool" onclick="goFacebookHome()">🏠 FB Home</button>
+                    <button class="btn-tool" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+                    <button class="btn-tool" onclick="toggleDesktopMode()">🖥️ PC Mode</button>
+                    <button class="btn-tool" onclick="zoomText(1)">🔍 Zoom (+)</button>
+                </div>
+
+                <div class="win-footer-hint">
+                    💡 Hold & Drag to move anywhere on screen
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Clear Data Modal -->
+    <div id="confirm-modal">
+        <div class="modal-box">
+            <div class="modal-title">🧹 Clear Facebook Data?</div>
+            <div class="modal-body">
+                This will clear all browser cache, stored posts, and local session data. Are you sure? (সমস্ত ডাটা এবং ক্যাশ ডিলিট করতে চান?)
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeClearConfirmModal()">Cancel</button>
+                <button class="modal-btn modal-btn-delete" onclick="executeClearData()">Clear Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast message popup -->
+    <div id="sn-toast">Message</div>
+
+    <script>
+        // ==========================================
+        // DEFAULT INITIAL POSTS DATA
+        // ==========================================
+        const initialPosts = [
+            {
+                id: 1,
+                author: "SN Community & Tech",
+                badge: "SN",
+                bgBadge: "#1877F2",
+                time: "10m • 🌐 Public",
+                content: "Welcome to SN Facebook! You can use the floating 'SN Mini Tool' to quickly reload pages, clear cache/cookies data, or switch between desktop and mobile mode! 🚀🇧🇩",
+                likes: 142,
+                comments: 28,
+                shares: 14,
+                liked: false
+            },
+            {
+                id: 2,
+                author: "Shakil Hasan",
+                badge: "S",
+                bgBadge: "#00897B",
+                time: "1h • 👥 Friends",
+                content: "Alhamdulillah! Finally created our custom Facebook companion app with draggable floating Windows Mini controller. Try dragging the SN badge anywhere on the screen!",
+                likes: 89,
+                comments: 16,
+                shares: 5,
+                liked: false
+            },
+            {
+                id: 3,
+                author: "Bangla Tech Updates",
+                badge: "B",
+                bgBadge: "#E65100",
+                time: "3h • 🌐 Public",
+                content: "Facebook tip: If you face slow loading or session glitches, tap the floating SN Windows tool and press 'Clear Data' or 'Reload' to refresh immediately.",
+                likes: 312,
+                comments: 54,
+                shares: 43,
+                liked: false
+            }
+        ];
+
+        let posts = [];
+
+        function loadPosts() {
+            const saved = localStorage.getItem('sn_fb_posts');
+            if (saved) {
+                try { posts = JSON.parse(saved); } catch (e) { posts = [...initialPosts]; }
+            } else {
+                posts = [...initialPosts];
+            }
+            renderPosts();
+        }
+
+        function savePosts() {
+            localStorage.setItem('sn_fb_posts', JSON.stringify(posts));
+        }
+
+        function renderPosts() {
+            const list = document.getElementById('posts-list');
+            list.innerHTML = '';
+
+            posts.forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'fb-post-card';
+                card.innerHTML = `
+                    <div class="post-header">
+                        <div class="user-avatar" style="background:${post.bgBadge};">${post.badge}</div>
+                        <div class="post-header-info">
+                            <div class="author-title">${post.author}</div>
+                            <div class="post-meta">${post.time}</div>
+                        </div>
+                    </div>
+                    <div class="post-body-text">${post.content}</div>
+                    <div class="post-stats-row">
+                        <span>👍 <span id="likes-count-${post.id}">${post.likes}</span></span>
+                        <span>${post.comments} comments • ${post.shares} shares</span>
+                    </div>
+                    <div class="post-actions-row">
+                        <button class="post-interactive-btn ${post.liked ? 'liked' : ''}" onclick="toggleLikePost(${post.id}, this)">
+                            👍 Like
+                        </button>
+                        <button class="post-interactive-btn" onclick="commentPost(${post.id})">
+                            💬 Comment
+                        </button>
+                        <button class="post-interactive-btn" onclick="sharePost(${post.id})">
+                            ↗️ Share
+                        </button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function toggleLikePost(postId, btn) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            post.liked = !post.liked;
+            post.likes += post.liked ? 1 : -1;
+            savePosts();
+            btn.classList.toggle('liked', post.liked);
+            const countEl = document.getElementById(`likes-count-${postId}`);
+            if (countEl) countEl.innerText = post.likes;
+        }
+
+        function commentPost(postId) {
+            const comment = prompt('Write a comment (কমেন্ট লিখুন):');
+            if (comment && comment.trim() !== '') {
+                const post = posts.find(p => p.id === postId);
+                if (post) {
+                    post.comments += 1;
+                    savePosts();
+                    renderPosts();
+                    showToast('Comment posted! (কমেন্ট যোগ হয়েছে)');
+                }
+            }
+        }
+
+        function sharePost(postId) {
+            showToast('Post shared to your timeline! 🚀');
+        }
+
+        function openPostModal() {
+            const text = prompt("What's on your mind? (আপনার মনে কি আছে?):");
+            if (text && text.trim() !== '') {
+                const newPost = {
+                    id: Date.now(),
+                    author: "You (User)",
+                    badge: "ME",
+                    bgBadge: "#1877F2",
+                    time: "Just now • 🌐 Public",
+                    content: text,
+                    likes: 0,
+                    comments: 0,
+                    shares: 0,
+                    liked: false
+                };
+                posts.unshift(newPost);
+                savePosts();
+                renderPosts();
+                showToast('✅ Post published successfully!');
+            }
+        }
+
+        function switchTab(el, tabName) {
+            document.querySelectorAll('.fb-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            showToast('Viewing: ' + tabName.toUpperCase());
+        }
+
+        function openSearch() {
+            const q = prompt('Search Facebook (ফেসবুকে অনুসন্ধান করুন):');
+            if (q) showToast('Searching for: ' + q);
+        }
+
+        function openMessenger() {
+            showToast('💬 Opening Messenger Chats...');
+        }
+
+        // ==========================================
+        // DRAGGABLE FLOATING "SN" WINDOWS MINI TOOL
+        // ==========================================
+        const container = document.getElementById('sn-floating-container');
+        const badge = document.getElementById('sn-badge');
+        const dragBar = document.getElementById('sn-drag-bar');
+        const snWindow = document.getElementById('sn-window');
+
+        let isDragging = false;
+        let startX = 0, startY = 0;
+        let initialX = 0, initialY = 0;
+        let hasMoved = false;
+
+        function makeDraggable(el) {
+            el.addEventListener('touchstart', onTouchStart, { passive: false });
+            el.addEventListener('mousedown', onMouseDown);
+        }
+
+        makeDraggable(badge);
+        makeDraggable(dragBar);
+
+        function onTouchStart(e) {
+            const touch = e.touches[0];
+            startDrag(touch.clientX, touch.clientY);
+            window.addEventListener('touchmove', onTouchMove, { passive: false });
+            window.addEventListener('touchend', onTouchEnd);
+        }
+
+        function onTouchMove(e) {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            moveDrag(touch.clientX, touch.clientY);
+            e.preventDefault();
+        }
+
+        function onTouchEnd() {
+            stopDrag();
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+        }
+
+        function onMouseDown(e) {
+            startDrag(e.clientX, e.clientY);
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        }
+
+        function onMouseMove(e) {
+            if (!isDragging) return;
+            moveDrag(e.clientX, e.clientY);
+        }
+
+        function onMouseUp() {
+            stopDrag();
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        }
+
+        function startDrag(clientX, clientY) {
+            isDragging = true;
+            hasMoved = false;
+            startX = clientX;
+            startY = clientY;
+
+            const rect = container.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+        }
+
+        function moveDrag(clientX, clientY) {
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasMoved = true;
+            }
+
+            let newX = initialX + dx;
+            let newY = initialY + dy;
+
+            const maxX = window.innerWidth - container.offsetWidth - 5;
+            const maxY = window.innerHeight - container.offsetHeight - 5;
+
+            newX = Math.max(5, Math.min(newX, maxX));
+            newY = Math.max(5, Math.min(newY, maxY));
+
+            container.style.left = newX + 'px';
+            container.style.top = newY + 'px';
+            container.style.right = 'auto';
+        }
+
+        function stopDrag() {
+            isDragging = false;
+        }
+
+        function openSnTool() {
+            if (hasMoved) return; // Do not open if dragged
+            badge.style.display = 'none';
+            snWindow.style.display = 'block';
+        }
+
+        function closeSnTool() {
+            snWindow.style.display = 'none';
+            badge.style.display = 'flex';
+        }
+
+        function resetPos() {
+            container.style.top = '75px';
+            container.style.left = 'auto';
+            container.style.right = '15px';
+            showToast('Position reset to top-right!');
+        }
+
+        // ==========================================
+        // 🔄 RELOAD ACTION ("relod baton")
+        // ==========================================
+        function handleReload() {
+            showToast('🔄 Reloading Facebook...');
+            const icon = document.getElementById('spin-reload-icon');
+            if (icon) {
+                icon.style.transform = 'rotate(360deg)';
+                icon.style.transition = 'transform 0.6s ease';
+                setTimeout(() => {
+                    icon.style.transform = 'rotate(0deg)';
+                    icon.style.transition = 'none';
+                }, 600);
+            }
+            loadPosts();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function quickReload(e) {
+            e.stopPropagation();
+            handleReload();
+        }
+
+        // ==========================================
+        // 🧹 CLEAR DATA ACTION ("clear data baton")
+        // ==========================================
+        function openClearConfirmModal() {
+            document.getElementById('confirm-modal').style.display = 'flex';
+        }
+
+        function closeClearConfirmModal() {
+            document.getElementById('confirm-modal').style.display = 'none';
+        }
+
+        function executeClearData() {
+            closeClearConfirmModal();
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+            } catch (e) {}
+
+            posts = [...initialPosts];
+            renderPosts();
+            showToast('🧹 All Facebook data, cookies & cache cleared!');
+        }
+
+        // ==========================================
+        // EXTRA TOOLS
+        // ==========================================
+        function goFacebookHome() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast('🏠 Returned to Facebook Home');
+        }
+
+        let isDark = false;
+        function toggleDarkMode() {
+            isDark = !isDark;
+            document.body.classList.toggle('dark-mode', isDark);
+            showToast(isDark ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated');
+        }
+
+        let isDesktop = false;
+        function toggleDesktopMode() {
+            isDesktop = !isDesktop;
+            const root = document.getElementById('app-root');
+            if (isDesktop) {
+                root.style.maxWidth = '680px';
+                root.style.margin = '0 auto';
+                root.style.boxShadow = '0 0 20px rgba(0,0,0,0.2)';
+                showToast('🖥️ Desktop Mode (Centered Layout)');
+            } else {
+                root.style.maxWidth = '100%';
+                root.style.margin = '0';
+                root.style.boxShadow = 'none';
+                showToast('📱 Mobile Mode (Full Width)');
+            }
+        }
+
+        let currentZoom = 14;
+        function zoomText(step) {
+            currentZoom = (currentZoom >= 18) ? 12 : currentZoom + 2;
+            document.querySelectorAll('.post-body-text').forEach(el => {
+                el.style.fontSize = currentZoom + 'px';
+            });
+            showToast('Text Size: ' + currentZoom + 'px');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('sn-toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPosts();
+        });
+    </script>
+</body>
+</html>

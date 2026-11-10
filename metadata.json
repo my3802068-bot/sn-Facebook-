@@ -1,0 +1,6 @@
+{
+  "name": "SN Facebook",
+  "description": "Facebook companion app with draggable SN Windows mini floating tool featuring reload, cache clear, and quick web controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

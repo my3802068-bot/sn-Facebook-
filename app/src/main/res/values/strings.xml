@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">SN Facebook</string>
+    <string name="sn_tool_title">SN Mini Tool</string>
+    <string name="sn_reload">Reload</string>
+    <string name="sn_clear_data">Clear Data</string>
+    <string name="sn_home">Facebook Home</string>
+    <string name="sn_desktop_mode">Desktop Mode</string>
+    <string name="sn_mobile_mode">Mobile Mode</string>
+    <string name="sn_dark_mode">Dark Mode</string>
+    <string name="sn_light_mode">Light Mode</string>
+    <string name="sn_minimize">Minimize</string>
+    <string name="sn_expand">Expand</string>
+    <string name="sn_data_cleared">Browser data and cache cleared successfully!</string>
+    <string name="sn_reloading">Reloading Facebook…</string>
+    <string name="sn_drag_hint">Drag anywhere to move</string>
+    <string name="offline_title">You\'re Offline</string>
+    <string name="offline_desc">Unable to connect to Facebook. Check your internet connection or use preview mode.</string>
+    <string name="retry">Retry</string>
+</resources>
