@@ -23,3 +23,9 @@ val WinHeaderDark = Color(0xFF2D2D2D)
 val WinCloseRed = Color(0xFFE81123)
 val WinMinimizeGray = Color(0xFF767676)
 val WinAccentCyan = Color(0xFF00B7C3)
+
+// Cloudflare 1.1.1.1 VPN Colors
+val CloudflareOrange = Color(0xFFF38020)
+val CloudflareOrangeDark = Color(0xFFD96B14)
+val CloudflareOrangeContainer = Color(0xFF3D230A)
+val VpnConnectedGreen = Color(0xFF10B981)

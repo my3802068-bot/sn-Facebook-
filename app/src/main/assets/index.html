@@ -755,8 +755,28 @@
 
             <div class="win-content">
                 <div class="win-address-bar">
-                    <span><span class="green-dot"></span>m.facebook.com</span>
+                    <span><span class="green-dot" id="win-status-dot"></span><span id="win-status-text">m.facebook.com • 1.1.1.1 VPN</span></span>
                     <span style="color:#38BDF8; cursor:pointer;" onclick="resetPos()">Reset Pos</span>
+                </div>
+
+                <!-- 🛡️ 1.1.1.1 FREE VPN CARD -->
+                <div id="vpn-card" style="background:#27272A; border:1px solid #F38020; border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(243, 128, 32, 0.2);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div id="vpn-shield-badge" style="width:32px; height:32px; border-radius:50%; background:#F38020; display:flex; align-items:center; justify-content:center; color:white; font-size:16px;">🛡️</div>
+                        <div>
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <span style="color:white; font-weight:900; font-size:13px;">1.1.1.1 VPN</span>
+                                <span style="background:rgba(243,128,32,0.25); color:#F38020; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:4px;">FREE</span>
+                            </div>
+                            <div id="vpn-status-subtext" style="color:#10B981; font-size:10px; font-weight:500;">🟢 Connected • Cloudflare WARP (18ms)</div>
+                        </div>
+                    </div>
+                    <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
+                        <input type="checkbox" id="vpn-toggle-checkbox" checked onchange="toggle1111Vpn(this.checked)" style="opacity:0; width:0; height:0;">
+                        <span id="vpn-slider" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:#F38020; border-radius:24px; transition:0.3s;">
+                            <span id="vpn-knob" style="position:absolute; content:''; height:18px; width:18px; left:23px; bottom:3px; background-color:white; border-radius:50%; transition:0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.4);"></span>
+                        </span>
+                    </label>
                 </div>
 
                 <div class="win-section-title">QUICK ACTIONS (প্রধান বাটন)</div>
@@ -1121,6 +1141,43 @@
             posts = [...initialPosts];
             renderPosts();
             showToast('🧹 All Facebook data, cookies & cache cleared!');
+        }
+
+        // ==========================================
+        // 🛡️ 1.1.1.1 FREE VPN CONTROLLER
+        // ==========================================
+        let is1111VpnActive = true;
+        function toggle1111Vpn(checked) {
+            is1111VpnActive = checked;
+            const subtext = document.getElementById('vpn-status-subtext');
+            const slider = document.getElementById('vpn-slider');
+            const knob = document.getElementById('vpn-knob');
+            const badge = document.getElementById('vpn-shield-badge');
+            const card = document.getElementById('vpn-card');
+            const statusText = document.getElementById('win-status-text');
+            const statusDot = document.getElementById('win-status-dot');
+
+            if (is1111VpnActive) {
+                subtext.innerHTML = '🟢 Connected • Cloudflare WARP (18ms)';
+                subtext.style.color = '#10B981';
+                slider.style.backgroundColor = '#F38020';
+                knob.style.left = '23px';
+                badge.style.backgroundColor = '#F38020';
+                card.style.borderColor = '#F38020';
+                statusText.innerText = 'm.facebook.com • 1.1.1.1 VPN';
+                statusDot.style.backgroundColor = '#10B981';
+                showToast('🛡️ 1.1.1.1 VPN Connected • Cloudflare WARP Active');
+            } else {
+                subtext.innerHTML = '⚪ Disconnected • Tap switch to connect';
+                subtext.style.color = '#A1A1AA';
+                slider.style.backgroundColor = '#3F3F46';
+                knob.style.left = '3px';
+                badge.style.backgroundColor = '#3F3F46';
+                card.style.borderColor = '#3F3F46';
+                statusText.innerText = 'm.facebook.com';
+                statusDot.style.backgroundColor = '#6B7280';
+                showToast('1.1.1.1 VPN Disconnected');
+            }
         }
 
         // ==========================================

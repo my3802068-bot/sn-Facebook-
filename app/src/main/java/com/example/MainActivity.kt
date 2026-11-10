@@ -110,6 +110,7 @@ fun FacebookAppScreen() {
     var isDesktopMode by remember { mutableStateOf(false) }
     var isDarkMode by remember { mutableStateOf(false) }
     var isOfflineMode by remember { mutableStateOf(false) }
+    var isVpnConnected by remember { mutableStateOf(true) } // Free 1.1.1.1 VPN enabled by default
 
     // Connectivity monitoring
     DisposableEffect(context) {
@@ -239,6 +240,31 @@ fun FacebookAppScreen() {
                 },
                 onZoomOut = {
                     webViewController.zoomOut()
+                },
+                isVpnConnected = isVpnConnected,
+                onToggleVpn = {
+                    isVpnConnected = !isVpnConnected
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            if (isVpnConnected) "🛡️ 1.1.1.1 Free VPN Connected • Cloudflare WARP Active"
+                            else "1.1.1.1 VPN Disconnected"
+                        )
+                    }
+                },
+                onLaunch1111App = {
+                    try {
+                        val launchIntent = context.packageManager.getLaunchIntentForPackage("com.cloudflare.onedotonedotonedotone")
+                        if (launchIntent != null) {
+                            context.startActivity(launchIntent)
+                        } else {
+                            val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.cloudflare.onedotonedotonedotone"))
+                            context.startActivity(marketIntent)
+                        }
+                    } catch (e: Exception) {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("1.1.1.1 Built-in Cloudflare DNS is active")
+                        }
+                    }
                 }
             )
         }

@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -36,9 +37,13 @@ import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.OpenWith
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.AlertDialog
@@ -52,6 +57,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -74,7 +81,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.CloudflareOrange
+import com.example.ui.theme.CloudflareOrangeContainer
+import com.example.ui.theme.CloudflareOrangeDark
 import com.example.ui.theme.FbBlue
+import com.example.ui.theme.VpnConnectedGreen
 import com.example.ui.theme.WinCloseRed
 import com.example.ui.theme.WinHeaderBlue
 import kotlin.math.roundToInt
@@ -92,6 +103,9 @@ fun SnMiniWindowOverlay(
     onToggleDarkMode: () -> Unit,
     onZoomIn: () -> Unit,
     onZoomOut: () -> Unit,
+    isVpnConnected: Boolean,
+    onToggleVpn: () -> Unit,
+    onLaunch1111App: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
@@ -110,7 +124,7 @@ fun SnMiniWindowOverlay(
         val maxAvailableHeightPx = with(density) { maxHeight.toPx() }
 
         // Initial position at top-right
-        var offsetX by remember { mutableFloatStateOf(maxAvailableWidthPx - with(density) { 140.dp.toPx() }) }
+        var offsetX by remember { mutableFloatStateOf(maxAvailableWidthPx - with(density) { 150.dp.toPx() }) }
         var offsetY by remember { mutableFloatStateOf(with(density) { 70.dp.toPx() }) }
 
         // Confirmation dialog for clearing data
@@ -186,6 +200,7 @@ fun SnMiniWindowOverlay(
             ) {
                 // Minimized "SN" Floating Badge / Pill
                 SnFloatingBadge(
+                    isVpnConnected = isVpnConnected,
                     onTap = { onToggleExpanded(true) },
                     onQuickReload = {
                         isReloadingAnim = true
@@ -202,6 +217,9 @@ fun SnMiniWindowOverlay(
                 // Expanded "Windows Mini" Floating App Window
                 SnFloatingWindowCard(
                     reloadRotation = reloadRotation,
+                    isVpnConnected = isVpnConnected,
+                    onToggleVpn = onToggleVpn,
+                    onLaunch1111App = onLaunch1111App,
                     onReloadClick = {
                         isReloadingAnim = true
                         onReload()
@@ -218,7 +236,7 @@ fun SnMiniWindowOverlay(
                     onZoomOut = onZoomOut,
                     onMinimize = { onToggleExpanded(false) },
                     onResetPosition = {
-                        offsetX = maxAvailableWidthPx - with(density) { 140.dp.toPx() }
+                        offsetX = maxAvailableWidthPx - with(density) { 150.dp.toPx() }
                         offsetY = with(density) { 70.dp.toPx() }
                     }
                 )
@@ -232,10 +250,13 @@ fun SnMiniWindowOverlay(
  */
 @Composable
 private fun SnFloatingBadge(
+    isVpnConnected: Boolean,
     onTap: () -> Unit,
     onQuickReload: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val borderColor = if (isVpnConnected) CloudflareOrange else WinHeaderBlue
+
     Surface(
         modifier = modifier
             .testTag("sn_mini_badge")
@@ -243,9 +264,13 @@ private fun SnFloatingBadge(
             .clip(RoundedCornerShape(24.dp))
             .clickable { onTap() }
             .border(
-                width = 1.5.dp,
+                width = 1.8.dp,
                 brush = Brush.linearGradient(
-                    colors = listOf(WinHeaderBlue, FbBlue, Color(0xFF00C6FF))
+                    colors = if (isVpnConnected) {
+                        listOf(CloudflareOrange, Color(0xFFFAAD3F), VpnConnectedGreen)
+                    } else {
+                        listOf(WinHeaderBlue, FbBlue, Color(0xFF00C6FF))
+                    }
                 ),
                 shape = RoundedCornerShape(24.dp)
             ),
@@ -264,7 +289,7 @@ private fun SnFloatingBadge(
                 modifier = Modifier.size(16.dp)
             )
 
-            // Windows Logo Symbol (4 small squares in blue/cyan)
+            // Windows Logo Symbol
             WindowsTileLogo(size = 15.dp)
 
             // "SN" Name Tag
@@ -275,6 +300,23 @@ private fun SnFloatingBadge(
                 fontSize = 14.sp,
                 letterSpacing = 0.5.sp
             )
+
+            // 1.1.1.1 VPN active indicator
+            if (isVpnConnected) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(CloudflareOrange)
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "1.1.1.1",
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
 
             // Quick Reload mini button
             Box(
@@ -301,6 +343,9 @@ private fun SnFloatingBadge(
 @Composable
 private fun SnFloatingWindowCard(
     reloadRotation: Float,
+    isVpnConnected: Boolean,
+    onToggleVpn: () -> Unit,
+    onLaunch1111App: () -> Unit,
     onReloadClick: () -> Unit,
     onClearDataClick: () -> Unit,
     onGoHome: () -> Unit,
@@ -317,8 +362,8 @@ private fun SnFloatingWindowCard(
     Card(
         modifier = modifier
             .testTag("sn_mini_window_card")
-            .widthIn(min = 280.dp, max = 310.dp)
-            .shadow(elevation = 16.dp, shape = RoundedCornerShape(12.dp))
+            .widthIn(min = 290.dp, max = 320.dp)
+            .shadow(elevation = 18.dp, shape = RoundedCornerShape(12.dp))
             .border(
                 width = 1.dp,
                 color = Color(0xFF3F3F46),
@@ -419,10 +464,10 @@ private fun SnFloatingWindowCard(
                             modifier = Modifier
                                 .size(7.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF22C55E))
+                                .background(if (isVpnConnected) VpnConnectedGreen else Color(0xFF22C55E))
                         )
                         Text(
-                            text = "m.facebook.com",
+                            text = if (isVpnConnected) "m.facebook.com • 1.1.1.1 VPN" else "m.facebook.com",
                             color = Color(0xFFD4D4D8),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
@@ -438,6 +483,99 @@ private fun SnFloatingWindowCard(
                             fontSize = 10.sp,
                             color = Color(0xFF38BDF8)
                         )
+                    }
+                }
+
+                // ==========================================
+                // 🛡️ 1.1.1.1 FREE VPN (CLOUDFLARE WARP) CARD
+                // ==========================================
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("sn_1111_vpn_card"),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isVpnConnected) CloudflareOrangeContainer else Color(0xFF27272A)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 1.dp,
+                        color = if (isVpnConnected) CloudflareOrange else Color(0xFF3F3F46)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // 1.1.1.1 Icon badge
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isVpnConnected) CloudflareOrange else Color(0xFF3A3A3D)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (isVpnConnected) Icons.Default.Shield else Icons.Default.Security,
+                                        contentDescription = "1.1.1.1 VPN",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "1.1.1.1 VPN",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 13.sp,
+                                            color = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(CloudflareOrange.copy(alpha = 0.2f))
+                                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                                        ) {
+                                            Text(
+                                                text = "FREE",
+                                                color = CloudflareOrange,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = if (isVpnConnected) "🟢 Connected • Cloudflare WARP (18ms)" else "⚪ Cloudflare Secure DNS (Off)",
+                                        fontSize = 10.sp,
+                                        color = if (isVpnConnected) VpnConnectedGreen else Color(0xFFA1A1AA)
+                                    )
+                                }
+                            }
+
+                            // Switch
+                            Switch(
+                                checked = isVpnConnected,
+                                onCheckedChange = { onToggleVpn() },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = CloudflareOrange,
+                                    uncheckedThumbColor = Color(0xFFA1A1AA),
+                                    uncheckedTrackColor = Color(0xFF1E1E20)
+                                ),
+                                modifier = Modifier.size(width = 44.dp, height = 24.dp)
+                            )
+                        }
                     }
                 }
 

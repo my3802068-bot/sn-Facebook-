@@ -13,6 +13,10 @@
     <string name="sn_data_cleared">Browser data and cache cleared successfully!</string>
     <string name="sn_reloading">Reloading Facebook…</string>
     <string name="sn_drag_hint">Drag anywhere to move</string>
+    <string name="sn_vpn_title">1.1.1.1 Free VPN</string>
+    <string name="sn_vpn_cloudflare">Cloudflare WARP DNS</string>
+    <string name="sn_vpn_connected">VPN Connected • Protected</string>
+    <string name="sn_vpn_disconnected">VPN Disconnected</string>
     <string name="offline_title">You\'re Offline</string>
     <string name="offline_desc">Unable to connect to Facebook. Check your internet connection or use preview mode.</string>
     <string name="retry">Retry</string>
