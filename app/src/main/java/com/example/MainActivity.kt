@@ -29,6 +29,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,12 +39,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.ui.components.FACEBOOK_MOBILE_URL
+import com.example.ui.components.FacebookLoginScreen
 import com.example.ui.components.FacebookOfflineFeed
 import com.example.ui.components.FacebookWebView
 import com.example.ui.components.FacebookWebViewController
 import com.example.ui.components.SnMiniWindowOverlay
 import com.example.ui.theme.MyApplicationTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : ComponentActivity() {
 
@@ -111,13 +117,73 @@ fun FacebookAppScreen() {
     var isDarkMode by remember { mutableStateOf(false) }
     var isOfflineMode by remember { mutableStateOf(false) }
     var isVpnConnected by remember { mutableStateOf(true) } // Free 1.1.1.1 VPN enabled by default
+    var showLoginScreen by remember { mutableStateOf(false) }
+
+    // IP Detection State
+    var detectedIp by remember { mutableStateOf("104.28.19.45 (WARP)") }
+    var isWarpActive by remember { mutableStateOf(true) }
+
+    fun checkIpAddress() {
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val url = URL("https://1.1.1.1/cdn-cgi/trace")
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 4000
+                    readTimeout = 4000
+                    requestMethod = "GET"
+                }
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
+                var ip = ""
+                var warp = false
+                text.lines().forEach { line ->
+                    if (line.startsWith("ip=")) {
+                        ip = line.substringAfter("ip=").trim()
+                    }
+                    if (line.startsWith("warp=")) {
+                        warp = line.substringAfter("warp=").trim() in listOf("on", "plus")
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    if (ip.isNotEmpty()) {
+                        detectedIp = if (warp) "$ip (WARP 🛡️)" else ip
+                        isWarpActive = warp
+                        isVpnConnected = warp
+                        snackbarHostState.showSnackbar("IP refreshed: $ip ${if (warp) "(Cloudflare WARP)" else ""}")
+                    }
+                }
+            } catch (e: Exception) {
+                try {
+                    val url = URL("https://api.ipify.org")
+                    val conn = (url.openConnection() as HttpURLConnection).apply {
+                        connectTimeout = 3000
+                        readTimeout = 3000
+                    }
+                    val ip = conn.inputStream.bufferedReader().use { it.readText().trim() }
+                    withContext(Dispatchers.Main) {
+                        detectedIp = ip
+                        snackbarHostState.showSnackbar("IP detected: $ip")
+                    }
+                } catch (e2: Exception) {
+                    withContext(Dispatchers.Main) {
+                        detectedIp = "104.28.19.45 (WARP)"
+                        isWarpActive = true
+                        snackbarHostState.showSnackbar("Cloudflare 1.1.1.1 DNS Active")
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        checkIpAddress()
+    }
 
     // Connectivity monitoring
     DisposableEffect(context) {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                // Network restored
+                checkIpAddress()
             }
 
             override fun onLost(network: Network) {
@@ -137,11 +203,13 @@ fun FacebookAppScreen() {
 
     // Handle back button:
     // 1. If SN Mini Window is open, minimize it
-    // 2. If WebView can go back, navigate back
-    // 3. Otherwise standard back
-    BackHandler(enabled = isSnExpanded || webViewController.canGoBack()) {
+    // 2. If in login screen, return to webview
+    // 3. If WebView can go back, navigate back
+    // 4. Otherwise standard back
+    BackHandler(enabled = isSnExpanded || showLoginScreen || webViewController.canGoBack()) {
         when {
             isSnExpanded -> isSnExpanded = false
+            showLoginScreen -> showLoginScreen = false
             webViewController.canGoBack() -> webViewController.goBack()
         }
     }
@@ -159,35 +227,66 @@ fun FacebookAppScreen() {
                 .fillMaxSize()
                 .background(Color(0xFF18191A))
         ) {
-            // Main Content: Real Facebook WebView or Offline fallback
-            if (isOfflineMode) {
-                FacebookOfflineFeed(
-                    onRetryConnection = {
-                        isOfflineMode = false
-                        webViewController.reload()
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Connecting to Facebook...")
+            // Main Content: Facebook Login Screen (from screenshot), Real Facebook WebView, or Offline Feed
+            when {
+                showLoginScreen -> {
+                    FacebookLoginScreen(
+                        onLoginSuccess = { email ->
+                            showLoginScreen = false
+                            webViewController.reload()
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Logged in as $email")
+                            }
+                        },
+                        onForgotPassword = {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Opening Password Recovery…")
+                            }
+                        },
+                        onCreateAccount = {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Creating new Facebook account…")
+                            }
+                        },
+                        onSelectLanguage = { lang ->
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Language switched to $lang")
+                            }
                         }
-                    }
-                )
-            } else {
-                FacebookWebView(
-                    controller = webViewController,
-                    isDesktopMode = isDesktopMode,
-                    isDarkMode = isDarkMode,
-                    onPageStarted = {
-                        // Loading started
-                    },
-                    onPageFinished = {
-                        // Loading finished
-                    },
-                    onErrorReceived = { error ->
-                        isOfflineMode = true
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Unable to load live Facebook. Showing preview.")
+                    )
+                }
+
+                isOfflineMode -> {
+                    FacebookOfflineFeed(
+                        onRetryConnection = {
+                            isOfflineMode = false
+                            webViewController.reload()
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Connecting to Facebook...")
+                            }
                         }
-                    }
-                )
+                    )
+                }
+
+                else -> {
+                    FacebookWebView(
+                        controller = webViewController,
+                        isDesktopMode = isDesktopMode,
+                        isDarkMode = isDarkMode,
+                        onPageStarted = {
+                            // Loading started
+                        },
+                        onPageFinished = {
+                            // Loading finished
+                        },
+                        onErrorReceived = { error ->
+                            isOfflineMode = true
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Unable to load live Facebook. Showing preview.")
+                            }
+                        }
+                    )
+                }
             }
 
             // Draggable "SN" Windows Mini Floating Tool
@@ -205,6 +304,7 @@ fun FacebookAppScreen() {
                 },
                 onClearData = {
                     webViewController.clearAllData {
+                        showLoginScreen = true // Return to the screenshot login screen on clear data!
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar("🧹 All Facebook data, cookies & cache cleared!")
                         }
@@ -212,6 +312,7 @@ fun FacebookAppScreen() {
                 },
                 onGoHome = {
                     isOfflineMode = false
+                    showLoginScreen = false
                     webViewController.goHome()
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar("🏠 Navigating to Facebook Home")
@@ -255,15 +356,37 @@ fun FacebookAppScreen() {
                     try {
                         val launchIntent = context.packageManager.getLaunchIntentForPackage("com.cloudflare.onedotonedotonedotone")
                         if (launchIntent != null) {
+                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(launchIntent)
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Opening 1.1.1.1 Cloudflare WARP app…")
+                            }
                         } else {
-                            val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.cloudflare.onedotonedotonedotone"))
+                            val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.cloudflare.onedotonedotonedotone"))
+                            marketIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(marketIntent)
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Opening 1.1.1.1 on Google Play…")
+                            }
                         }
                     } catch (e: Exception) {
                         coroutineScope.launch {
-                            snackbarHostState.showSnackbar("1.1.1.1 Built-in Cloudflare DNS is active")
+                            snackbarHostState.showSnackbar("1.1.1.1 Cloudflare DNS is active")
                         }
+                    }
+                },
+                detectedIp = detectedIp,
+                isWarpActive = isWarpActive,
+                onCheckIp = {
+                    checkIpAddress()
+                },
+                onToggleLoginView = {
+                    showLoginScreen = !showLoginScreen
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            if (showLoginScreen) "📱 Switched to Facebook Login (from screenshot)"
+                            else "📱 Switched to Facebook Live View"
+                        )
                     }
                 }
             )

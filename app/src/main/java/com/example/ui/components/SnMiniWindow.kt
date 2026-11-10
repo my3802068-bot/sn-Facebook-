@@ -106,6 +106,10 @@ fun SnMiniWindowOverlay(
     isVpnConnected: Boolean,
     onToggleVpn: () -> Unit,
     onLaunch1111App: () -> Unit = {},
+    detectedIp: String = "Detecting...",
+    isWarpActive: Boolean = false,
+    onCheckIp: () -> Unit = {},
+    onToggleLoginView: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
@@ -220,6 +224,10 @@ fun SnMiniWindowOverlay(
                     isVpnConnected = isVpnConnected,
                     onToggleVpn = onToggleVpn,
                     onLaunch1111App = onLaunch1111App,
+                    detectedIp = detectedIp,
+                    isWarpActive = isWarpActive,
+                    onCheckIp = onCheckIp,
+                    onToggleLoginView = onToggleLoginView,
                     onReloadClick = {
                         isReloadingAnim = true
                         onReload()
@@ -346,6 +354,10 @@ private fun SnFloatingWindowCard(
     isVpnConnected: Boolean,
     onToggleVpn: () -> Unit,
     onLaunch1111App: () -> Unit,
+    detectedIp: String,
+    isWarpActive: Boolean,
+    onCheckIp: () -> Unit,
+    onToggleLoginView: () -> Unit,
     onReloadClick: () -> Unit,
     onClearDataClick: () -> Unit,
     onGoHome: () -> Unit,
@@ -576,6 +588,54 @@ private fun SnFloatingWindowCard(
                                 modifier = Modifier.size(width = 44.dp, height = 24.dp)
                             )
                         }
+
+                        // Real IP display & Check IP
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF1E1E20), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "IP: $detectedIp",
+                                fontSize = 11.sp,
+                                color = if (isWarpActive) VpnConnectedGreen else Color(0xFFD4D4D8),
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Text(
+                                text = "Refresh IP",
+                                fontSize = 10.sp,
+                                color = CloudflareOrange,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clickable { onCheckIp() }
+                                    .padding(2.dp)
+                            )
+                        }
+
+                        // Connect directly in official 1.1.1.1 App Button
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = onLaunch1111App,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(32.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CloudflareOrange,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = "⚡ Open 1.1.1.1 App (Change Mobile IP)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
@@ -702,6 +762,20 @@ private fun SnFloatingWindowCard(
                             color = if (isDesktopMode) Color(0xFF38BDF8) else Color.White
                         )
                     }
+                }
+
+                // Switch to exact Facebook Login screen from Screenshot
+                OutlinedButton(
+                    onClick = onToggleLoginView,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = "📱 Facebook Login Screen (Screenshot)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF38BDF8)
+                    )
                 }
 
                 // Dark mode and Zoom controls row
