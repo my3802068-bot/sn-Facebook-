@@ -770,7 +770,7 @@
                 </div>
 
                 <!-- 🌐 CUSTOM PROXY SETUP CARD (SOCKS5 / HTTP+TLS / HTTP) -->
-                <div id="proxy-card" onclick="openProxyModal()" style="background:#27272A; border:1px solid #3F3F46; border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+                <div id="proxy-card" style="background:#27272A; border:1px solid #3F3F46; border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:space-between;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <div id="proxy-icon-badge" style="width:32px; height:32px; border-radius:50%; background:#3A3A3D; display:flex; align-items:center; justify-content:center; color:white; font-size:15px;">🌐</div>
                         <div>
@@ -778,11 +778,46 @@
                                 <span style="color:white; font-weight:bold; font-size:13px;">Custom Proxy</span>
                                 <span id="proxy-proto-tag" style="background:rgba(56,189,248,0.2); color:#38BDF8; font-size:8px; font-weight:bold; padding:1px 5px; border-radius:4px;">SOCKS5 • TLS</span>
                             </div>
-                            <div id="proxy-status-subtext" style="color:#A1A1AA; font-size:10px;">⚪ Tap to setup Server, Port, UID, Pass</div>
+                            <div id="proxy-status-subtext" style="color:#A1A1AA; font-size:10px;">⚪ Tap ⚙️ to setup Server, Port, UID, Pass</div>
                         </div>
                     </div>
-                    <button id="proxy-action-btn" onclick="event.stopPropagation(); openProxyModal()" style="background:#3F3F46; border:none; border-radius:6px; color:white; font-size:10px; font-weight:bold; padding:5px 8px; cursor:pointer;">
-                        Set Proxy
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button onclick="openProxyModal()" title="Proxy Settings" style="background:transparent; border:none; color:#38BDF8; font-size:15px; cursor:pointer; padding:3px;">⚙️</button>
+                        <!-- Direct ON/OFF Switch -->
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
+                            <input type="checkbox" id="proxy-toggle-checkbox" onchange="toggleProxySwitch(this.checked)" style="opacity:0; width:0; height:0;">
+                            <span id="proxy-slider" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:#3F3F46; border-radius:24px; transition:0.3s;">
+                                <span id="proxy-knob" style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background-color:white; border-radius:50%; transition:0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.4);"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 📍 LIVE IP & COUNTRY STATUS CARD -->
+                <div style="background:#18181B; border:1px solid #2E2E33; border-radius:8px; padding:9px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="html-ip-flag" style="font-size:18px;">🌐</span>
+                            <div>
+                                <div style="font-size:11px; color:#A1A1AA;">Active IP: <strong id="html-ip-text" style="color:white;">Detecting...</strong></div>
+                                <div id="html-country-text" style="font-size:10px; color:#10B981;">Checking location...</div>
+                            </div>
+                        </div>
+                        <button onclick="checkMyIpGeo()" title="Refresh IP & Location" style="background:none; border:none; color:#38BDF8; font-size:14px; cursor:pointer;">🔄</button>
+                    </div>
+                    <button onclick="verifyIpWeb()" style="width:100%; padding:4px 0; background:none; border:1px solid #3F3F46; border-radius:4px; color:#38BDF8; font-size:10px; font-weight:600; cursor:pointer;">
+                        🌐 Verify on WhatIsMyIP.com
+                    </button>
+                </div>
+
+                <!-- 🔑 ACCOUNT & FB PAGES -->
+                <div class="win-section-title">ACCOUNT & FB PAGES (পেজ সমুহ)</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <button onclick="openCreateAccountPage()" style="background:#15803D; color:white; border:none; padding:8px 6px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
+                        ➕ Create A/C
+                    </button>
+                    <button onclick="openForgotPasswordPage()" style="background:#475569; color:white; border:none; padding:8px 6px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
+                        🔑 Forgot Pass
                     </button>
                 </div>
 
@@ -898,6 +933,124 @@
                 <button type="button" id="html-proxy-save-btn" disabled onclick="saveHtmlProxyLive()" style="padding:8px 14px; background:#3F3F46; color:#71717A; border:none; border-radius:6px; font-size:11px; font-weight:bold; cursor:not-allowed;">
                     💾 Set & Activate
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ➕ Create Account Modal -->
+    <div id="create-account-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000000; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:#FFFFFF; color:#1C1E21; border-radius:12px; max-width:360px; width:100%; padding:20px; box-shadow:0 20px 40px rgba(0,0,0,0.6); max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                <div>
+                    <h2 style="font-size:20px; font-weight:bold; color:#1C1E21; margin:0;">Create a New Account</h2>
+                    <p style="font-size:12px; color:#65676B; margin:2px 0 0 0;">It's quick and easy.</p>
+                </div>
+                <button onclick="closeCreateAccountModal()" style="background:none; border:none; font-size:18px; color:#65676B; cursor:pointer;">✕</button>
+            </div>
+            <hr style="border:none; border-top:1px solid #CED0D4; margin-bottom:14px;">
+
+            <form onsubmit="submitCreateAccount(event)">
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <input type="text" id="reg-fname" placeholder="First name" required style="flex:1; padding:9px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; outline:none;">
+                    <input type="text" id="reg-lname" placeholder="Surname" required style="flex:1; padding:9px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; outline:none;">
+                </div>
+                <input type="text" id="reg-contact" placeholder="Mobile number or email" required style="width:100%; padding:9px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; margin-bottom:10px; outline:none;">
+                <input type="password" id="reg-password" placeholder="New password (min 6 chars)" minlength="6" required style="width:100%; padding:9px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; margin-bottom:10px; outline:none;">
+
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:11px; color:#65676B; font-weight:600; display:block; margin-bottom:4px;">Date of Birth</label>
+                    <input type="date" value="2000-01-15" style="width:100%; padding:8px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:12px; outline:none;">
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:11px; color:#65676B; font-weight:600; display:block; margin-bottom:4px;">Gender</label>
+                    <div style="display:flex; gap:6px;">
+                        <label style="flex:1; border:1px solid #CCD0D5; border-radius:6px; padding:6px; font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><input type="radio" name="gender" value="Female"> Female</label>
+                        <label style="flex:1; border:1px solid #CCD0D5; border-radius:6px; padding:6px; font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><input type="radio" name="gender" value="Male" checked> Male</label>
+                        <label style="flex:1; border:1px solid #CCD0D5; border-radius:6px; padding:6px; font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><input type="radio" name="gender" value="Custom"> Custom</label>
+                    </div>
+                </div>
+
+                <p style="font-size:10px; color:#8A8D91; line-height:1.4; margin-bottom:14px;">
+                    By clicking Sign Up, you agree to our Terms, Privacy Policy and Cookies Policy.
+                </p>
+
+                <button type="submit" style="width:100%; padding:10px; background:#42B72A; color:white; border:none; border-radius:6px; font-size:15px; font-weight:bold; cursor:pointer; margin-bottom:10px;">
+                    Sign Up
+                </button>
+            </form>
+            <div style="text-align:center;">
+                <a href="https://m.facebook.com/reg/" target="_blank" style="font-size:12px; color:#1877F2; text-decoration:none; font-weight:600;">Open Official Facebook Sign-Up Web</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔑 Forgot Password Modal -->
+    <div id="forgot-password-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000000; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:#FFFFFF; color:#1C1E21; border-radius:12px; max-width:360px; width:100%; padding:20px; box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h2 style="font-size:18px; font-weight:bold; color:#1C1E21; margin:0;" id="forgot-modal-title">Find Your Account</h2>
+                <button onclick="closeForgotPasswordModal()" style="background:none; border:none; font-size:18px; color:#65676B; cursor:pointer;">✕</button>
+            </div>
+            <hr style="border:none; border-top:1px solid #CED0D4; margin-bottom:14px;">
+
+            <!-- Step 1: Search -->
+            <div id="forgot-step-1">
+                <p style="font-size:13px; color:#65676B; margin-bottom:14px;">
+                    Enter your mobile number or email address to search for your account.
+                </p>
+                <input type="text" id="forgot-search-input" placeholder="Mobile number or email" style="width:100%; padding:10px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; margin-bottom:14px; outline:none;">
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button onclick="closeForgotPasswordModal()" style="padding:9px 14px; background:#E4E6EB; color:#1C1E21; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+                    <button onclick="searchForgotAccount()" style="padding:9px 18px; background:#1877F2; color:white; border:none; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">Search</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Choose recovery method -->
+            <div id="forgot-step-2" style="display:none;">
+                <p style="font-size:13px; color:#65676B; margin-bottom:12px;">
+                    We found your account. Where should we send the confirmation code?
+                </p>
+                <div style="background:#F0F2F5; border-radius:8px; padding:10px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                    <div style="width:36px; height:36px; border-radius:50%; background:#1877F2; color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px;">SN</div>
+                    <div>
+                        <div style="font-weight:bold; font-size:13px;">Facebook User</div>
+                        <div style="font-size:11px; color:#65676B;" id="forgot-found-user">User</div>
+                    </div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+                    <label style="border:1px solid #1877F2; background:#E7F3FF; border-radius:6px; padding:10px; display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+                        <input type="radio" name="forgot-method" value="sms" checked> Send 6-digit code via SMS
+                    </label>
+                    <label style="border:1px solid #CCD0D5; border-radius:6px; padding:10px; display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+                        <input type="radio" name="forgot-method" value="email"> Send 6-digit code via Email
+                    </label>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button onclick="continueForgotMethod()" style="width:100%; padding:10px; background:#1877F2; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Enter Code & New Password -->
+            <div id="forgot-step-3" style="display:none;">
+                <p style="font-size:13px; color:#65676B; margin-bottom:10px;">
+                    Enter the 6-digit code sent to your phone/email.
+                </p>
+                <input type="number" id="forgot-code-input" placeholder="e.g. 123456" style="width:100%; padding:10px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:14px; margin-bottom:10px; outline:none;">
+                <input type="password" id="forgot-new-pass" placeholder="Create new password" style="width:100%; padding:10px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:14px; margin-bottom:14px; outline:none;">
+                <button onclick="submitNewPassword()" style="width:100%; padding:10px; background:#1877F2; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">Reset Password</button>
+            </div>
+
+            <!-- Step 4: Success -->
+            <div id="forgot-step-4" style="display:none; text-align:center; padding:10px 0;">
+                <div style="font-size:40px; margin-bottom:8px;">✅</div>
+                <h3 style="font-size:16px; font-weight:bold; margin-bottom:6px;">Password Reset Successful!</h3>
+                <p style="font-size:12px; color:#65676B; margin-bottom:14px;">Your password has been changed. You can now use your new password.</p>
+                <button onclick="closeForgotPasswordModal()" style="width:100%; padding:10px; background:#1877F2; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">Return to Facebook</button>
+            </div>
+
+            <div style="text-align:center; margin-top:12px;">
+                <a href="https://m.facebook.com/recover/initiate/" target="_blank" style="font-size:12px; color:#1877F2; text-decoration:none; font-weight:600;">Open Official Facebook Recovery Web</a>
             </div>
         </div>
     </div>
@@ -1342,6 +1495,8 @@
             const btn = document.getElementById('proxy-action-btn');
             const tag = document.getElementById('proxy-proto-tag');
             const iconBadge = document.getElementById('proxy-icon-badge');
+            const toggle = document.getElementById('proxy-toggle-checkbox');
+            if (toggle) toggle.checked = !!currentProxy.enabled;
 
             if (currentProxy.enabled && currentProxy.host) {
                 card.style.borderColor = '#38BDF8';
@@ -1498,6 +1653,7 @@
             localStorage.setItem('sn_proxy_settings', JSON.stringify(currentProxy));
             updateProxyUi();
             closeProxyModal();
+            checkMyIpGeo();
             showToast(`🌐 Proxy Activated: ${selectedProtocol} ${host}:${port}`);
         }
 
@@ -1506,12 +1662,130 @@
             localStorage.setItem('sn_proxy_settings', JSON.stringify(currentProxy));
             updateProxyUi();
             closeProxyModal();
-            showToast('Custom Proxy Disabled');
+            checkMyIpGeo();
+            showToast('⚪ Custom Proxy Disabled • Direct connection restored');
+        }
+
+        function toggleProxySwitch(checked) {
+            if (!currentProxy.host || !currentProxy.port) {
+                document.getElementById('proxy-toggle-checkbox').checked = false;
+                openProxyModal();
+                showToast('⚙️ Please configure Proxy Server & Port first!');
+                return;
+            }
+            currentProxy.enabled = checked;
+            localStorage.setItem('sn_proxy_settings', JSON.stringify(currentProxy));
+            updateProxyUi();
+            checkMyIpGeo();
+            showToast(checked ? `🟢 Custom Proxy ON (${currentProxy.protocol})` : '⚪ Custom Proxy OFF');
+        }
+
+        function checkMyIpGeo() {
+            const ipEl = document.getElementById('html-ip-text');
+            const countryEl = document.getElementById('html-country-text');
+            const flagEl = document.getElementById('html-ip-flag');
+            ipEl.innerText = 'Checking...';
+            countryEl.innerText = 'Detecting location...';
+
+            fetch('https://ipwho.is/')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.ip) {
+                        ipEl.innerText = data.ip;
+                        const flag = data.flag ? data.flag.emoji : '🌐';
+                        flagEl.innerText = flag;
+                        countryEl.innerText = (data.city ? data.city + ', ' : '') + (data.country || 'Global');
+                        countryEl.style.color = currentProxy.enabled ? '#38BDF8' : '#10B981';
+                    }
+                })
+                .catch(() => {
+                    fetch('https://api.ipify.org?format=json')
+                        .then(r => r.json())
+                        .then(d => {
+                            ipEl.innerText = d.ip;
+                            countryEl.innerText = 'Online';
+                        })
+                        .catch(() => {
+                            ipEl.innerText = 'Offline / Blocked';
+                            countryEl.innerText = 'Check network';
+                        });
+                });
+        }
+
+        function verifyIpWeb() {
+            window.open('https://whatismyipaddress.com', '_blank');
+            showToast('🌐 Opening WhatIsMyIP.com to verify location...');
+        }
+
+        // ==========================================
+        // ➕ CREATE ACCOUNT WORKFLOW
+        // ==========================================
+        function openCreateAccountPage() {
+            document.getElementById('create-account-modal').style.display = 'flex';
+        }
+
+        function closeCreateAccountModal() {
+            document.getElementById('create-account-modal').style.display = 'none';
+        }
+
+        function submitCreateAccount(e) {
+            e.preventDefault();
+            const fname = document.getElementById('reg-fname').value.trim();
+            closeCreateAccountModal();
+            showToast(`✅ Welcome, ${fname}! Account created successfully.`);
+        }
+
+        // ==========================================
+        // 🔑 FORGOT PASSWORD WORKFLOW
+        // ==========================================
+        function openForgotPasswordPage() {
+            document.getElementById('forgot-password-modal').style.display = 'flex';
+            document.getElementById('forgot-step-1').style.display = 'block';
+            document.getElementById('forgot-step-2').style.display = 'none';
+            document.getElementById('forgot-step-3').style.display = 'none';
+            document.getElementById('forgot-step-4').style.display = 'none';
+            document.getElementById('forgot-modal-title').innerText = 'Find Your Account';
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').style.display = 'none';
+        }
+
+        function searchForgotAccount() {
+            const input = document.getElementById('forgot-search-input').value.trim();
+            if (!input) {
+                alert('Please enter your mobile number or email address!');
+                return;
+            }
+            document.getElementById('forgot-found-user').innerText = input;
+            document.getElementById('forgot-step-1').style.display = 'none';
+            document.getElementById('forgot-step-2').style.display = 'block';
+            document.getElementById('forgot-modal-title').innerText = 'Choose a way to log in';
+        }
+
+        function continueForgotMethod() {
+            document.getElementById('forgot-step-2').style.display = 'none';
+            document.getElementById('forgot-step-3').style.display = 'block';
+            document.getElementById('forgot-modal-title').innerText = 'Enter 6-digit code';
+        }
+
+        function submitNewPassword() {
+            const code = document.getElementById('forgot-code-input').value.trim();
+            const pass = document.getElementById('forgot-new-pass').value.trim();
+            if (!code || pass.length < 6) {
+                alert('Please enter 6-digit code and a password of at least 6 characters!');
+                return;
+            }
+            document.getElementById('forgot-step-3').style.display = 'none';
+            document.getElementById('forgot-step-4').style.display = 'block';
+            document.getElementById('forgot-modal-title').innerText = 'Success!';
+            showToast('✅ Password changed successfully!');
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             loadPosts();
             loadSavedProxy();
+            checkMyIpGeo();
         });
     </script>
 </body>

@@ -53,6 +53,10 @@ class FacebookWebViewController(
         webView?.reload()
     }
 
+    fun loadUrl(url: String) {
+        webView?.loadUrl(url)
+    }
+
     fun goHome() {
         webView?.loadUrl(FACEBOOK_MOBILE_URL)
     }

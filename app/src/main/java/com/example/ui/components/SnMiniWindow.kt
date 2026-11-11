@@ -39,6 +39,9 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.OpenWith
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Security
@@ -73,6 +76,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import com.example.model.GeoIpInfo
 import com.example.model.ProxyProtocol
 import com.example.model.ProxySettings
 import com.example.model.ProxyTester
@@ -121,8 +125,14 @@ fun SnMiniWindowOverlay(
     isVpnConnected: Boolean,
     onToggleVpn: () -> Unit,
     proxySettings: ProxySettings = ProxySettings(),
+    onToggleProxy: () -> Unit = {},
     onSaveProxy: (ProxySettings) -> Unit = {},
     onDisableProxy: () -> Unit = {},
+    currentIpInfo: GeoIpInfo? = null,
+    onCheckCurrentIp: () -> Unit = {},
+    onOpenIpCheckWeb: () -> Unit = {},
+    onOpenCreateAccount: () -> Unit = {},
+    onOpenForgotPassword: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
@@ -255,8 +265,14 @@ fun SnMiniWindowOverlay(
                     isVpnConnected = isVpnConnected,
                     onToggleVpn = onToggleVpn,
                     proxySettings = proxySettings,
+                    onToggleProxy = onToggleProxy,
                     onOpenProxyDialog = { showProxyDialog = true },
                     onDisableProxy = onDisableProxy,
+                    currentIpInfo = currentIpInfo,
+                    onCheckCurrentIp = onCheckCurrentIp,
+                    onOpenIpCheckWeb = onOpenIpCheckWeb,
+                    onOpenCreateAccount = onOpenCreateAccount,
+                    onOpenForgotPassword = onOpenForgotPassword,
                     onReloadClick = {
                         isReloadingAnim = true
                         onReload()
@@ -399,8 +415,14 @@ private fun SnFloatingWindowCard(
     isVpnConnected: Boolean,
     onToggleVpn: () -> Unit,
     proxySettings: ProxySettings,
+    onToggleProxy: () -> Unit,
     onOpenProxyDialog: () -> Unit,
     onDisableProxy: () -> Unit,
+    currentIpInfo: GeoIpInfo?,
+    onCheckCurrentIp: () -> Unit,
+    onOpenIpCheckWeb: () -> Unit,
+    onOpenCreateAccount: () -> Unit,
+    onOpenForgotPassword: () -> Unit,
     onReloadClick: () -> Unit,
     onClearDataClick: () -> Unit,
     onGoHome: () -> Unit,
@@ -636,8 +658,7 @@ private fun SnFloatingWindowCard(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("sn_proxy_card")
-                        .clickable { onOpenProxyDialog() },
+                        .testTag("sn_proxy_card"),
                     shape = RoundedCornerShape(8.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (proxySettings.enabled) Color(0xFF0F172A) else Color(0xFF27272A)
@@ -647,86 +668,279 @@ private fun SnFloatingWindowCard(
                         color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFF3F3F46)
                     )
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(if (proxySettings.enabled) Color(0xFF0284C7) else Color(0xFF3A3A3D)),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Dns,
-                                    contentDescription = "Custom Proxy",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(if (proxySettings.enabled) Color(0xFF0284C7) else Color(0xFF3A3A3D)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Dns,
+                                        contentDescription = "Custom Proxy",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Custom Proxy",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(5.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(Color(0xFF38BDF8).copy(alpha = 0.2f))
+                                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                                        ) {
+                                            Text(
+                                                text = proxySettings.protocol.displayName,
+                                                color = Color(0xFF38BDF8),
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = if (proxySettings.enabled) {
+                                            "🟢 Connected: ${proxySettings.host}:${proxySettings.port}" +
+                                                if (proxySettings.lastPingMs > 0) " (${proxySettings.lastPingMs}ms)" else ""
+                                        } else if (proxySettings.host.isNotBlank()) {
+                                            "⚪ Disconnected • Tap switch to ON"
+                                        } else {
+                                            "⚪ Not configured • Tap ⚙️ to setup"
+                                        },
+                                        fontSize = 10.sp,
+                                        color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFFA1A1AA)
+                                    )
+                                }
                             }
 
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "Custom Proxy",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                        color = Color.White
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Settings / Edit button
+                                IconButton(
+                                    onClick = onOpenProxyDialog,
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Settings,
+                                        contentDescription = "Edit Proxy",
+                                        tint = Color(0xFF38BDF8),
+                                        modifier = Modifier.size(16.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(Color(0xFF38BDF8).copy(alpha = 0.2f))
-                                            .padding(horizontal = 4.dp, vertical = 1.dp)
-                                    ) {
+                                }
+
+                                Spacer(modifier = Modifier.width(4.dp))
+
+                                // Direct ON/OFF Switch ("ar proxy off on baton diyo")
+                                Switch(
+                                    checked = proxySettings.enabled,
+                                    onCheckedChange = { onToggleProxy() },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFF0284C7),
+                                        uncheckedThumbColor = Color(0xFFA1A1AA),
+                                        uncheckedTrackColor = Color(0xFF1E1E20)
+                                    ),
+                                    modifier = Modifier.size(width = 44.dp, height = 24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ==========================================
+                // 📍 LIVE IP & COUNTRY STATUS CARD
+                // ==========================================
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("sn_live_ip_card"),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF18181B)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 1.dp,
+                        color = Color(0xFF2E2E33)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(9.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = currentIpInfo?.flag ?: "🌐",
+                                    fontSize = 18.sp
+                                )
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "SOCKS5 • HTTP+TLS",
-                                            color = Color(0xFF38BDF8),
-                                            fontSize = 8.sp,
-                                            fontWeight = FontWeight.Bold
+                                            text = "Active IP: ",
+                                            fontSize = 11.sp,
+                                            color = Color(0xFFA1A1AA)
+                                        )
+                                        Text(
+                                            text = if (!currentIpInfo?.ip.isNullOrBlank()) currentIpInfo?.ip!! else "Fetching...",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
                                         )
                                     }
+                                    Text(
+                                        text = "Country: ${if (!currentIpInfo?.country.isNullOrBlank()) currentIpInfo?.country else "Checking location..."}" +
+                                            if (!currentIpInfo?.city.isNullOrBlank()) " (${currentIpInfo?.city})" else "",
+                                        fontSize = 10.sp,
+                                        color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFF10B981)
+                                    )
                                 }
-                                Text(
-                                    text = if (proxySettings.enabled) {
-                                        "🟢 Active: ${proxySettings.protocol.displayName} ${proxySettings.host}:${proxySettings.port}" +
-                                            if (proxySettings.lastPingMs > 0) " (${proxySettings.lastPingMs}ms)" else ""
-                                    } else {
-                                        "⚪ Tap to setup Server, Port, UID, Pass"
-                                    },
-                                    fontSize = 10.sp,
-                                    color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFFA1A1AA)
+                            }
+
+                            // Refresh IP button
+                            IconButton(
+                                onClick = onCheckCurrentIp,
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Refresh IP & Location",
+                                    tint = Color(0xFF38BDF8),
+                                    modifier = Modifier.size(15.dp)
                                 )
                             }
                         }
 
-                        // Edit / Setup button
-                        Button(
-                            onClick = onOpenProxyDialog,
+                        // Button to verify external IP in browser
+                        OutlinedButton(
+                            onClick = onOpenIpCheckWeb,
                             modifier = Modifier
-                                .height(28.dp)
-                                .testTag("sn_open_proxy_setup_btn"),
-                            shape = RoundedCornerShape(6.dp),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (proxySettings.enabled) Color(0xFF0284C7) else Color(0xFF3F3F46)
-                            )
+                                .fillMaxWidth()
+                                .height(26.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 2.dp)
                         ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Public,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = Color(0xFF38BDF8)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "🌐 Verify on WhatIsMyIP.com",
+                                    fontSize = 10.sp,
+                                    color = Color(0xFF38BDF8)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ==========================================
+                // 🔑 FACEBOOK PAGES: FORGOT & CREATE ACCOUNT
+                // ==========================================
+                Text(
+                    text = "ACCOUNT & FB PAGES",
+                    color = Color(0xFF71717A),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Create Account Button ("accunt create oage")
+                    Button(
+                        onClick = onOpenCreateAccount,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("sn_create_account_btn"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF15803D), // Facebook Green
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PersonAdd,
+                                contentDescription = "Create Account",
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = if (proxySettings.enabled) "Edit" else "Set Proxy",
-                                fontSize = 10.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold
+                                text = "Create A/C",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+
+                    // Forgot Password Button ("Forget page ekta diba")
+                    Button(
+                        onClick = onOpenForgotPassword,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("sn_forgot_password_btn"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF475569),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Key,
+                                contentDescription = "Forgot Password",
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Forgot Pass",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -1002,6 +1216,18 @@ fun ProxySetupDialog(
         )
     }
     var verifiedPing by remember { mutableStateOf(if (initialSettings.isVerified) initialSettings.lastPingMs else -1L) }
+    var verifiedGeo by remember {
+        mutableStateOf<GeoIpInfo?>(
+            if (initialSettings.detectedIp.isNotBlank()) {
+                GeoIpInfo(
+                    ip = initialSettings.detectedIp,
+                    country = initialSettings.detectedCountry,
+                    flag = initialSettings.detectedFlag,
+                    isProxy = true
+                )
+            } else null
+        )
+    }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -1219,12 +1445,15 @@ fun ProxySetupDialog(
 
                             isChecking = false
                             if (result.isSuccess) {
-                                val ping = result.getOrNull() ?: 25L
+                                val (ping, geo) = result.getOrNull() ?: Pair(25L, null)
                                 verifiedPing = ping
+                                verifiedGeo = geo
                                 checkResultSuccess = true
-                                checkResultMessage = "✅ Good Proxy! (Ping: ${ping}ms) • Live & Reachable"
+                                val countryTag = if (geo != null && geo.country.isNotBlank()) " • ${geo.flag} ${geo.country} (${geo.ip})" else ""
+                                checkResultMessage = "✅ Good Proxy! (Ping: ${ping}ms)$countryTag • Live & Reachable"
                             } else {
                                 verifiedPing = -1L
+                                verifiedGeo = null
                                 checkResultSuccess = false
                                 val err = result.exceptionOrNull()?.message ?: "Connection failed"
                                 checkResultMessage = "❌ Bad Proxy: $err"
@@ -1312,7 +1541,10 @@ fun ProxySetupDialog(
                         username = username.trim(),
                         password = password,
                         isVerified = true,
-                        lastPingMs = verifiedPing
+                        lastPingMs = verifiedPing,
+                        detectedIp = verifiedGeo?.ip ?: "",
+                        detectedCountry = verifiedGeo?.country ?: "",
+                        detectedFlag = verifiedGeo?.flag ?: "🌐"
                     )
                     onSaveProxy(settings)
                 },
