@@ -1,7 +1,6 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -29,20 +28,25 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DesktopWindows
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.OpenWith
-import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
@@ -51,16 +55,28 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import com.example.model.ProxyProtocol
+import com.example.model.ProxySettings
+import com.example.model.ProxyTester
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -83,7 +99,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.CloudflareOrange
 import com.example.ui.theme.CloudflareOrangeContainer
-import com.example.ui.theme.CloudflareOrangeDark
 import com.example.ui.theme.FbBlue
 import com.example.ui.theme.VpnConnectedGreen
 import com.example.ui.theme.WinCloseRed
@@ -105,14 +120,13 @@ fun SnMiniWindowOverlay(
     onZoomOut: () -> Unit,
     isVpnConnected: Boolean,
     onToggleVpn: () -> Unit,
-    onLaunch1111App: () -> Unit = {},
-    detectedIp: String = "Detecting...",
-    isWarpActive: Boolean = false,
-    onCheckIp: () -> Unit = {},
-    onToggleLoginView: () -> Unit = {},
+    proxySettings: ProxySettings = ProxySettings(),
+    onSaveProxy: (ProxySettings) -> Unit = {},
+    onDisableProxy: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
+    var showProxyDialog by remember { mutableStateOf(false) }
     var isReloadingAnim by remember { mutableStateOf(false) }
 
     val reloadRotation by animateFloatAsState(
@@ -121,6 +135,22 @@ fun SnMiniWindowOverlay(
         finishedListener = { isReloadingAnim = false },
         label = "ReloadRotation"
     )
+
+    // Proxy Setup & Live Check Dialog
+    if (showProxyDialog) {
+        ProxySetupDialog(
+            initialSettings = proxySettings,
+            onDismiss = { showProxyDialog = false },
+            onSaveProxy = { newSettings ->
+                showProxyDialog = false
+                onSaveProxy(newSettings)
+            },
+            onDisableProxy = {
+                showProxyDialog = false
+                onDisableProxy()
+            }
+        )
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -205,6 +235,7 @@ fun SnMiniWindowOverlay(
                 // Minimized "SN" Floating Badge / Pill
                 SnFloatingBadge(
                     isVpnConnected = isVpnConnected,
+                    proxySettings = proxySettings,
                     onTap = { onToggleExpanded(true) },
                     onQuickReload = {
                         isReloadingAnim = true
@@ -223,11 +254,9 @@ fun SnMiniWindowOverlay(
                     reloadRotation = reloadRotation,
                     isVpnConnected = isVpnConnected,
                     onToggleVpn = onToggleVpn,
-                    onLaunch1111App = onLaunch1111App,
-                    detectedIp = detectedIp,
-                    isWarpActive = isWarpActive,
-                    onCheckIp = onCheckIp,
-                    onToggleLoginView = onToggleLoginView,
+                    proxySettings = proxySettings,
+                    onOpenProxyDialog = { showProxyDialog = true },
+                    onDisableProxy = onDisableProxy,
                     onReloadClick = {
                         isReloadingAnim = true
                         onReload()
@@ -259,12 +288,11 @@ fun SnMiniWindowOverlay(
 @Composable
 private fun SnFloatingBadge(
     isVpnConnected: Boolean,
+    proxySettings: ProxySettings,
     onTap: () -> Unit,
     onQuickReload: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (isVpnConnected) CloudflareOrange else WinHeaderBlue
-
     Surface(
         modifier = modifier
             .testTag("sn_mini_badge")
@@ -274,7 +302,9 @@ private fun SnFloatingBadge(
             .border(
                 width = 1.8.dp,
                 brush = Brush.linearGradient(
-                    colors = if (isVpnConnected) {
+                    colors = if (proxySettings.enabled) {
+                        listOf(Color(0xFF0284C7), Color(0xFF38BDF8), Color(0xFF00D2FF))
+                    } else if (isVpnConnected) {
                         listOf(CloudflareOrange, Color(0xFFFAAD3F), VpnConnectedGreen)
                     } else {
                         listOf(WinHeaderBlue, FbBlue, Color(0xFF00C6FF))
@@ -309,8 +339,23 @@ private fun SnFloatingBadge(
                 letterSpacing = 0.5.sp
             )
 
-            // 1.1.1.1 VPN active indicator
-            if (isVpnConnected) {
+            // Custom Proxy active indicator
+            if (proxySettings.enabled) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFF0284C7))
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = proxySettings.protocol.displayName,
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            } else if (isVpnConnected) {
+                // 1.1.1.1 VPN active indicator
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
@@ -353,11 +398,9 @@ private fun SnFloatingWindowCard(
     reloadRotation: Float,
     isVpnConnected: Boolean,
     onToggleVpn: () -> Unit,
-    onLaunch1111App: () -> Unit,
-    detectedIp: String,
-    isWarpActive: Boolean,
-    onCheckIp: () -> Unit,
-    onToggleLoginView: () -> Unit,
+    proxySettings: ProxySettings,
+    onOpenProxyDialog: () -> Unit,
+    onDisableProxy: () -> Unit,
     onReloadClick: () -> Unit,
     onClearDataClick: () -> Unit,
     onGoHome: () -> Unit,
@@ -514,126 +557,176 @@ private fun SnFloatingWindowCard(
                         color = if (isVpnConnected) CloudflareOrange else Color(0xFF3F3F46)
                     )
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(10.dp)
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            // 1.1.1.1 Icon badge
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isVpnConnected) CloudflareOrange else Color(0xFF3A3A3D)),
+                                contentAlignment = Alignment.Center
                             ) {
-                                // 1.1.1.1 Icon badge
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isVpnConnected) CloudflareOrange else Color(0xFF3A3A3D)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = if (isVpnConnected) Icons.Default.Shield else Icons.Default.Security,
-                                        contentDescription = "1.1.1.1 VPN",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "1.1.1.1 VPN",
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 13.sp,
-                                            color = Color.White
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(CloudflareOrange.copy(alpha = 0.2f))
-                                                .padding(horizontal = 4.dp, vertical = 1.dp)
-                                        ) {
-                                            Text(
-                                                text = "FREE",
-                                                color = CloudflareOrange,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        text = if (isVpnConnected) "🟢 Connected • Cloudflare WARP (18ms)" else "⚪ Cloudflare Secure DNS (Off)",
-                                        fontSize = 10.sp,
-                                        color = if (isVpnConnected) VpnConnectedGreen else Color(0xFFA1A1AA)
-                                    )
-                                }
+                                Icon(
+                                    imageVector = if (isVpnConnected) Icons.Default.Shield else Icons.Default.Security,
+                                    contentDescription = "1.1.1.1 VPN",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
 
-                            // Switch
-                            Switch(
-                                checked = isVpnConnected,
-                                onCheckedChange = { onToggleVpn() },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = CloudflareOrange,
-                                    uncheckedThumbColor = Color(0xFFA1A1AA),
-                                    uncheckedTrackColor = Color(0xFF1E1E20)
-                                ),
-                                modifier = Modifier.size(width = 44.dp, height = 24.dp)
-                            )
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "1.1.1.1 VPN",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 13.sp,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(CloudflareOrange.copy(alpha = 0.2f))
+                                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "FREE",
+                                            color = CloudflareOrange,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = if (isVpnConnected) "🟢 Connected • Cloudflare WARP (18ms)" else "⚪ Cloudflare Secure DNS (Off)",
+                                    fontSize = 10.sp,
+                                    color = if (isVpnConnected) VpnConnectedGreen else Color(0xFFA1A1AA)
+                                )
+                            }
                         }
 
-                        // Real IP display & Check IP
-                        Spacer(modifier = Modifier.height(8.dp))
+                        // Switch
+                        Switch(
+                            checked = isVpnConnected,
+                            onCheckedChange = { onToggleVpn() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = CloudflareOrange,
+                                uncheckedThumbColor = Color(0xFFA1A1AA),
+                                uncheckedTrackColor = Color(0xFF1E1E20)
+                            ),
+                            modifier = Modifier.size(width = 44.dp, height = 24.dp)
+                        )
+                    }
+                }
+
+                // ==========================================
+                // 🌐 CUSTOM PROXY SETUP CARD (SOCKS5 / HTTP+TLS / HTTP)
+                // ==========================================
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("sn_proxy_card")
+                        .clickable { onOpenProxyDialog() },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (proxySettings.enabled) Color(0xFF0F172A) else Color(0xFF27272A)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 1.dp,
+                        color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFF3F3F46)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFF1E1E20), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Text(
-                                text = "IP: $detectedIp",
-                                fontSize = 11.sp,
-                                color = if (isWarpActive) VpnConnectedGreen else Color(0xFFD4D4D8),
-                                fontWeight = FontWeight.Medium
-                            )
-
-                            Text(
-                                text = "Refresh IP",
-                                fontSize = 10.sp,
-                                color = CloudflareOrange,
-                                fontWeight = FontWeight.Bold,
+                            Box(
                                 modifier = Modifier
-                                    .clickable { onCheckIp() }
-                                    .padding(2.dp)
-                            )
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(if (proxySettings.enabled) Color(0xFF0284C7) else Color(0xFF3A3A3D)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Dns,
+                                    contentDescription = "Custom Proxy",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Custom Proxy",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(Color(0xFF38BDF8).copy(alpha = 0.2f))
+                                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "SOCKS5 • HTTP+TLS",
+                                            color = Color(0xFF38BDF8),
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = if (proxySettings.enabled) {
+                                        "🟢 Active: ${proxySettings.protocol.displayName} ${proxySettings.host}:${proxySettings.port}" +
+                                            if (proxySettings.lastPingMs > 0) " (${proxySettings.lastPingMs}ms)" else ""
+                                    } else {
+                                        "⚪ Tap to setup Server, Port, UID, Pass"
+                                    },
+                                    fontSize = 10.sp,
+                                    color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFFA1A1AA)
+                                )
+                            }
                         }
 
-                        // Connect directly in official 1.1.1.1 App Button
-                        Spacer(modifier = Modifier.height(8.dp))
+                        // Edit / Setup button
                         Button(
-                            onClick = onLaunch1111App,
+                            onClick = onOpenProxyDialog,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(32.dp),
+                                .height(28.dp)
+                                .testTag("sn_open_proxy_setup_btn"),
                             shape = RoundedCornerShape(6.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = CloudflareOrange,
-                                contentColor = Color.White
+                                containerColor = if (proxySettings.enabled) Color(0xFF0284C7) else Color(0xFF3F3F46)
                             )
                         ) {
                             Text(
-                                text = "⚡ Open 1.1.1.1 App (Change Mobile IP)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                                text = if (proxySettings.enabled) "Edit" else "Set Proxy",
+                                fontSize = 10.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -764,20 +857,6 @@ private fun SnFloatingWindowCard(
                     }
                 }
 
-                // Switch to exact Facebook Login screen from Screenshot
-                OutlinedButton(
-                    onClick = onToggleLoginView,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        text = "📱 Facebook Login Screen (Screenshot)",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
-                    )
-                }
-
                 // Dark mode and Zoom controls row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -896,3 +975,380 @@ fun WindowsTileLogo(size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modi
         }
     }
 }
+
+/**
+ * Custom Proxy Setup & Live Check Dialog (SOCKS5, HTTP+TLS, HTTP)
+ * Only allows saving if the proxy check succeeds!
+ */
+@Composable
+fun ProxySetupDialog(
+    initialSettings: ProxySettings,
+    onDismiss: () -> Unit,
+    onSaveProxy: (ProxySettings) -> Unit,
+    onDisableProxy: () -> Unit
+) {
+    var selectedProtocol by remember { mutableStateOf(initialSettings.protocol) }
+    var host by remember { mutableStateOf(initialSettings.host) }
+    var port by remember { mutableStateOf(initialSettings.port) }
+    var username by remember { mutableStateOf(initialSettings.username) }
+    var password by remember { mutableStateOf(initialSettings.password) }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    var isChecking by remember { mutableStateOf(false) }
+    var checkResultSuccess by remember { mutableStateOf<Boolean?>(if (initialSettings.isVerified) true else null) }
+    var checkResultMessage by remember {
+        mutableStateOf<String?>(
+            if (initialSettings.isVerified) "Proxy is verified (Ping: ${initialSettings.lastPingMs}ms)" else null
+        )
+    }
+    var verifiedPing by remember { mutableStateOf(if (initialSettings.isVerified) initialSettings.lastPingMs else -1L) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF0284C7)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Dns,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = "Custom Proxy Setup",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "SOCKS5 • HTTP + TLS • HTTP",
+                        fontSize = 11.sp,
+                        color = Color(0xFF38BDF8)
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Protocol Selection Chips
+                Text(
+                    text = "Select Protocol (প্রোটোকল নির্বাচন করুন):",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFD4D4D8)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    ProxyProtocol.values().forEach { proto ->
+                        val isSelected = selectedProtocol == proto
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                selectedProtocol = proto
+                                // Invalidate check on protocol change
+                                checkResultSuccess = null
+                                checkResultMessage = null
+                                verifiedPing = -1L
+                            },
+                            label = {
+                                Text(
+                                    text = proto.displayName,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF0284C7),
+                                selectedLabelColor = Color.White,
+                                containerColor = Color(0xFF27272A),
+                                labelColor = Color(0xFFA1A1AA)
+                            )
+                        )
+                    }
+                }
+
+                // Server (Host) & Port Inputs
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = host,
+                        onValueChange = {
+                            host = it
+                            checkResultSuccess = null
+                            checkResultMessage = null
+                            verifiedPing = -1L
+                        },
+                        label = { Text("Server / Host", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. 192.168.1.1", fontSize = 11.sp) },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(2f)
+                            .testTag("proxy_host_input"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF38BDF8),
+                            unfocusedBorderColor = Color(0xFF3F3F46),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = port,
+                        onValueChange = {
+                            if (it.length <= 5) {
+                                port = it.filter { char -> char.isDigit() }
+                                checkResultSuccess = null
+                                checkResultMessage = null
+                                verifiedPing = -1L
+                            }
+                        },
+                        label = { Text("Port", fontSize = 11.sp) },
+                        placeholder = { Text("1080", fontSize = 11.sp) },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .testTag("proxy_port_input"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF38BDF8),
+                            unfocusedBorderColor = Color(0xFF3F3F46),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+                }
+
+                // UID (Username) & Pass (Password)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = {
+                            username = it
+                            checkResultSuccess = null
+                            checkResultMessage = null
+                            verifiedPing = -1L
+                        },
+                        label = { Text("UID / Username", fontSize = 11.sp) },
+                        placeholder = { Text("Optional", fontSize = 11.sp) },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("proxy_user_input"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF38BDF8),
+                            unfocusedBorderColor = Color(0xFF3F3F46),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            checkResultSuccess = null
+                            checkResultMessage = null
+                            verifiedPing = -1L
+                        },
+                        label = { Text("Pass", fontSize = 11.sp) },
+                        placeholder = { Text("Optional", fontSize = 11.sp) },
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = "Toggle password",
+                                    tint = Color(0xFFA1A1AA),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("proxy_pass_input"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF38BDF8),
+                            unfocusedBorderColor = Color(0xFF3F3F46),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+                }
+
+                // CHECK PROXY BUTTON ("check option diyo proxy option ta jeno kaj kore")
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            isChecking = true
+                            checkResultSuccess = null
+                            checkResultMessage = null
+
+                            val result = ProxyTester.checkProxy(
+                                protocol = selectedProtocol,
+                                host = host.trim(),
+                                portText = port.trim(),
+                                username = username.trim(),
+                                password = password
+                            )
+
+                            isChecking = false
+                            if (result.isSuccess) {
+                                val ping = result.getOrNull() ?: 25L
+                                verifiedPing = ping
+                                checkResultSuccess = true
+                                checkResultMessage = "✅ Good Proxy! (Ping: ${ping}ms) • Live & Reachable"
+                            } else {
+                                verifiedPing = -1L
+                                checkResultSuccess = false
+                                val err = result.exceptionOrNull()?.message ?: "Connection failed"
+                                checkResultMessage = "❌ Bad Proxy: $err"
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("check_proxy_button"),
+                    enabled = !isChecking && host.isNotBlank() && port.isNotBlank(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF0284C7)
+                    )
+                ) {
+                    if (isChecking) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Checking Proxy Connection...", fontSize = 12.sp)
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "🔍 Check Proxy (চেক প্রক্সি)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+
+                // Check Result Feedback Banner
+                if (checkResultMessage != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(6.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (checkResultSuccess == true) Color(0xFF064E3B) else Color(0xFF7F1D1D)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (checkResultSuccess == true) Icons.Default.CheckCircle else Icons.Default.Error,
+                                contentDescription = null,
+                                tint = if (checkResultSuccess == true) Color(0xFF34D399) else Color(0xFFF87171),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = checkResultMessage ?: "",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "ℹ️ Note: You must Check Proxy and get a 'Good Proxy' status before setting. Bad proxies cannot be saved.",
+                        fontSize = 10.sp,
+                        color = Color(0xFF71717A)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            // SET / SAVE BUTTON: Only enabled if check succeeded! ("proxy cek kore jodi proxy valo hoy tahole set hobe kharap hole set hobe na")
+            Button(
+                onClick = {
+                    val settings = ProxySettings(
+                        enabled = true,
+                        protocol = selectedProtocol,
+                        host = host.trim(),
+                        port = port.trim(),
+                        username = username.trim(),
+                        password = password,
+                        isVerified = true,
+                        lastPingMs = verifiedPing
+                    )
+                    onSaveProxy(settings)
+                },
+                enabled = checkResultSuccess == true && host.isNotBlank() && port.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF10B981),
+                    disabledContainerColor = Color(0xFF3F3F46)
+                ),
+                shape = RoundedCornerShape(6.dp),
+                modifier = Modifier.testTag("save_proxy_button")
+            ) {
+                Text(
+                    text = "💾 Set & Activate",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = Color.White
+                )
+            }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (initialSettings.enabled) {
+                    TextButton(
+                        onClick = onDisableProxy,
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))
+                    ) {
+                        Text("Turn Off", fontSize = 12.sp)
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = Color(0xFFA1A1AA), fontSize = 12.sp)
+                }
+            }
+        },
+        containerColor = Color(0xFF1E1E22),
+        shape = RoundedCornerShape(12.dp)
+    )
+}
+

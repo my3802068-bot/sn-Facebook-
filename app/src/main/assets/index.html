@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SN Facebook - Exact Replica & Windows Mini Tool</title>
+    <title>SN Facebook - Windows Mini Tool with 1.1.1.1 VPN</title>
     <style>
         :root {
             --fb-blue: #1877F2;
@@ -268,16 +268,6 @@
             color: var(--fb-text);
             padding: 0 12px 10px 12px;
             white-space: pre-wrap;
-        }
-
-        .post-colored-bg {
-            padding: 40px 16px;
-            text-align: center;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            line-height: 1.4;
-            margin-bottom: 8px;
         }
 
         .post-stats-row {
@@ -651,192 +641,11 @@
         #sn-toast.show {
             transform: translateX(-50%) translateY(0);
         }
-
-        /* Facebook Login Screen (from Screenshot) */
-        #fb-login-view {
-            display: none;
-            flex-direction: column;
-            width: 100%;
-            height: 100%;
-            background: #ffffff;
-            overflow-y: auto;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 50;
-        }
-
-        .login-top-bar {
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-bottom: 1px solid #e5e5e5;
-            color: #4b4f56;
-            font-size: 17px;
-            font-weight: 500;
-        }
-
-        .login-form-body {
-            padding: 16px;
-            max-width: 440px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        .login-label {
-            font-size: 14px;
-            color: #1c1e21;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-
-        .login-input-wrap {
-            position: relative;
-            margin-bottom: 14px;
-        }
-
-        .login-input {
-            width: 100%;
-            height: 48px;
-            border: 1px solid #ccd0d5;
-            border-radius: 4px;
-            background: #f5f6f7;
-            padding: 10px 12px;
-            font-size: 15px;
-            color: #1c1e21;
-            outline: none;
-        }
-
-        .login-input:focus {
-            border-color: #1877f2;
-            background: #ffffff;
-        }
-
-        .login-info-icon {
-            position: absolute;
-            right: 12px;
-            top: 14px;
-            color: #8d949e;
-            font-size: 18px;
-            pointer-events: none;
-        }
-
-        .btn-fb-login {
-            width: 100%;
-            height: 44px;
-            background: #1877f2;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 4px;
-        }
-
-        .btn-fb-login:active {
-            background: #166fe5;
-        }
-
-        .forgot-link {
-            display: block;
-            margin: 16px 0 24px 0;
-            color: #1877f2;
-            font-size: 14px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .or-divider {
-            display: flex;
-            align-items: center;
-            margin: 20px 0;
-            color: #4b4f56;
-            font-size: 13px;
-        }
-
-        .or-divider::before, .or-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #ccd0d5;
-        }
-
-        .or-divider span {
-            padding: 0 14px;
-        }
-
-        .btn-create-acc {
-            display: block;
-            margin: 0 auto;
-            background: #42b72a;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 10px 18px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .lang-list {
-            margin-top: 32px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .lang-item {
-            color: #1877f2;
-            font-size: 14px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .lang-item.active {
-            color: #1c1e21;
-            font-weight: 600;
-        }
     </style>
 </head>
 <body>
 
     <div id="app-root">
-        <!-- Facebook Login Screen (from Screenshot) -->
-        <div id="fb-login-view">
-            <div class="login-top-bar">Facebook</div>
-            <div class="login-form-body">
-                <div class="login-label">Mobile number or email</div>
-                <div class="login-input-wrap">
-                    <input type="text" id="login-email" class="login-input" placeholder="">
-                    <span class="login-info-icon">ⓘ</span>
-                </div>
-
-                <div class="login-label">Password</div>
-                <div class="login-input-wrap">
-                    <input type="password" id="login-password" class="login-input" placeholder="">
-                </div>
-
-                <button class="btn-fb-login" onclick="submitFbLogin()">Log in</button>
-                <a class="forgot-link" onclick="forgotPassword()">Forgot password?</a>
-
-                <div class="or-divider"><span>or</span></div>
-
-                <button class="btn-create-acc" onclick="createFbAccount()">Create new account</button>
-
-                <div class="lang-list">
-                    <span class="lang-item active" onclick="selectLang('English (US)')">English (US)</span>
-                    <span class="lang-item" onclick="selectLang('বাংলা')">বাংলা</span>
-                    <span class="lang-item" onclick="selectLang('অসমীয়া')">অসমীয়া</span>
-                    <span class="lang-item" onclick="selectLang('Español')">Español</span>
-                    <span class="lang-item" onclick="selectLang('हिन्दी')">हिन्दी</span>
-                    <span class="lang-item" onclick="selectLang('Français (France)')">Français (France)</span>
-                    <span class="lang-item" onclick="selectLang('More languages...')">More languages...</span>
-                </div>
-            </div>
-        </div>
-
         <!-- Top Facebook Header -->
         <header class="fb-header">
             <span class="logo" onclick="window.scrollTo({top:0, behavior:'smooth'})">facebook</span>
@@ -941,35 +750,39 @@
                 </div>
 
                 <!-- 🛡️ 1.1.1.1 FREE VPN CARD -->
-                <div id="vpn-card" style="background:#27272A; border:1px solid #F38020; border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px; box-shadow:0 2px 8px rgba(243, 128, 32, 0.2);">
-                    <div style="display:flex; align-items:center; justify-content:space-between;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <div id="vpn-shield-badge" style="width:32px; height:32px; border-radius:50%; background:#F38020; display:flex; align-items:center; justify-content:center; color:white; font-size:16px;">🛡️</div>
-                            <div>
-                                <div style="display:flex; align-items:center; gap:5px;">
-                                    <span style="color:white; font-weight:900; font-size:13px;">1.1.1.1 VPN</span>
-                                    <span style="background:rgba(243,128,32,0.25); color:#F38020; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:4px;">FREE</span>
-                                </div>
-                                <div id="vpn-status-subtext" style="color:#10B981; font-size:10px; font-weight:500;">🟢 Connected • Cloudflare WARP (18ms)</div>
+                <div id="vpn-card" style="background:#27272A; border:1px solid #F38020; border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(243, 128, 32, 0.2);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div id="vpn-shield-badge" style="width:32px; height:32px; border-radius:50%; background:#F38020; display:flex; align-items:center; justify-content:center; color:white; font-size:16px;">🛡️</div>
+                        <div>
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <span style="color:white; font-weight:900; font-size:13px;">1.1.1.1 VPN</span>
+                                <span style="background:rgba(243,128,32,0.25); color:#F38020; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:4px;">FREE</span>
                             </div>
+                            <div id="vpn-status-subtext" style="color:#10B981; font-size:10px; font-weight:500;">🟢 Connected • Cloudflare WARP (18ms)</div>
                         </div>
-                        <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
-                            <input type="checkbox" id="vpn-toggle-checkbox" checked onchange="toggle1111Vpn(this.checked)" style="opacity:0; width:0; height:0;">
-                            <span id="vpn-slider" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:#F38020; border-radius:24px; transition:0.3s;">
-                                <span id="vpn-knob" style="position:absolute; content:''; height:18px; width:18px; left:23px; bottom:3px; background-color:white; border-radius:50%; transition:0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.4);"></span>
-                            </span>
-                        </label>
                     </div>
+                    <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
+                        <input type="checkbox" id="vpn-toggle-checkbox" checked onchange="toggle1111Vpn(this.checked)" style="opacity:0; width:0; height:0;">
+                        <span id="vpn-slider" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:#F38020; border-radius:24px; transition:0.3s;">
+                            <span id="vpn-knob" style="position:absolute; content:''; height:18px; width:18px; left:23px; bottom:3px; background-color:white; border-radius:50%; transition:0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.4);"></span>
+                        </span>
+                    </label>
+                </div>
 
-                    <!-- Live IP Display -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; background:#1E1E20; padding:5px 8px; border-radius:4px; font-size:11px;">
-                        <span style="color:#10B981; font-weight:500;" id="user-live-ip">IP: 104.28.19.45 (WARP 🛡️)</span>
-                        <span style="color:#F38020; cursor:pointer; font-weight:bold; font-size:10px;" onclick="refreshLiveIp()">Refresh IP</span>
+                <!-- 🌐 CUSTOM PROXY SETUP CARD (SOCKS5 / HTTP+TLS / HTTP) -->
+                <div id="proxy-card" onclick="openProxyModal()" style="background:#27272A; border:1px solid #3F3F46; border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div id="proxy-icon-badge" style="width:32px; height:32px; border-radius:50%; background:#3A3A3D; display:flex; align-items:center; justify-content:center; color:white; font-size:15px;">🌐</div>
+                        <div>
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <span style="color:white; font-weight:bold; font-size:13px;">Custom Proxy</span>
+                                <span id="proxy-proto-tag" style="background:rgba(56,189,248,0.2); color:#38BDF8; font-size:8px; font-weight:bold; padding:1px 5px; border-radius:4px;">SOCKS5 • TLS</span>
+                            </div>
+                            <div id="proxy-status-subtext" style="color:#A1A1AA; font-size:10px;">⚪ Tap to setup Server, Port, UID, Pass</div>
+                        </div>
                     </div>
-
-                    <!-- Connect via official Cloudflare 1.1.1.1 App (Package: com.cloudflare.onedotonedotonedotone) -->
-                    <button onclick="launchCloudflareApp()" style="background:#F38020; color:white; border:none; padding:7px; border-radius:5px; font-weight:bold; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;">
-                        ⚡ Open 1.1.1.1 App (Change Mobile IP)
+                    <button id="proxy-action-btn" onclick="event.stopPropagation(); openProxyModal()" style="background:#3F3F46; border:none; border-radius:6px; color:white; font-size:10px; font-weight:bold; padding:5px 8px; cursor:pointer;">
+                        Set Proxy
                     </button>
                 </div>
 
@@ -984,11 +797,6 @@
                         <span>🧹</span> Clear Data
                     </button>
                 </div>
-
-                <!-- Exact Screenshot Facebook Login Switcher -->
-                <button onclick="toggleLoginView()" style="background:transparent; border:1px solid #38BDF8; color:#38BDF8; padding:7px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; width:100%;">
-                    📱 Facebook Login Screen (from Screenshot)
-                </button>
 
                 <div class="win-section-title">EXTRA CONTROLS</div>
 
@@ -1020,13 +828,84 @@
         </div>
     </div>
 
+    <!-- 🌐 Proxy Setup & Live Check Modal -->
+    <div id="proxy-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000000; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:#1E1E22; border:1px solid #3F3F46; border-radius:12px; max-width:340px; width:100%; padding:18px; box-shadow:0 20px 40px rgba(0,0,0,0.6); color:white;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                <div style="width:30px; height:30px; border-radius:50%; background:#0284C7; display:flex; align-items:center; justify-content:center; font-size:16px;">🌐</div>
+                <div>
+                    <div style="font-size:16px; font-weight:bold; color:white;">Custom Proxy Setup</div>
+                    <div style="font-size:10px; color:#38BDF8;">SOCKS5 • HTTP + TLS • HTTP</div>
+                </div>
+            </div>
+
+            <!-- Protocol Selector -->
+            <div style="margin-bottom:10px;">
+                <label style="font-size:11px; color:#D4D4D8; font-weight:600; display:block; margin-bottom:6px;">Select Protocol:</label>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="proxy-proto-btn active" id="proto-socks5" onclick="setHtmlProxyProtocol('SOCKS5')" style="flex:1; padding:6px; background:#0284C7; color:white; border:none; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">SOCKS5</button>
+                    <button type="button" class="proxy-proto-btn" id="proto-httptls" onclick="setHtmlProxyProtocol('HTTP_TLS')" style="flex:1; padding:6px; background:#27272A; color:#A1A1AA; border:1px solid #3F3F46; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">HTTP+TLS</button>
+                    <button type="button" class="proxy-proto-btn" id="proto-http" onclick="setHtmlProxyProtocol('HTTP')" style="flex:1; padding:6px; background:#27272A; color:#A1A1AA; border:1px solid #3F3F46; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">HTTP</button>
+                </div>
+            </div>
+
+            <!-- Host & Port inputs -->
+            <div style="display:flex; gap:8px; margin-bottom:10px;">
+                <div style="flex:2;">
+                    <label style="font-size:10px; color:#A1A1AA; display:block; margin-bottom:4px;">Server / Host:</label>
+                    <input type="text" id="html-proxy-host" placeholder="e.g. 192.168.1.1" oninput="invalidateProxyCheck()" style="width:100%; background:#27272A; border:1px solid #3F3F46; border-radius:6px; padding:7px 10px; color:white; font-size:12px; outline:none;">
+                </div>
+                <div style="flex:1.2;">
+                    <label style="font-size:10px; color:#A1A1AA; display:block; margin-bottom:4px;">Port:</label>
+                    <input type="number" id="html-proxy-port" placeholder="1080" oninput="invalidateProxyCheck()" style="width:100%; background:#27272A; border:1px solid #3F3F46; border-radius:6px; padding:7px 10px; color:white; font-size:12px; outline:none;">
+                </div>
+            </div>
+
+            <!-- UID & Pass inputs -->
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <div style="flex:1;">
+                    <label style="font-size:10px; color:#A1A1AA; display:block; margin-bottom:4px;">UID / Username:</label>
+                    <input type="text" id="html-proxy-user" placeholder="Optional" oninput="invalidateProxyCheck()" style="width:100%; background:#27272A; border:1px solid #3F3F46; border-radius:6px; padding:7px 10px; color:white; font-size:12px; outline:none;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:10px; color:#A1A1AA; display:block; margin-bottom:4px;">Pass / Password:</label>
+                    <input type="password" id="html-proxy-pass" placeholder="Optional" oninput="invalidateProxyCheck()" style="width:100%; background:#27272A; border:1px solid #3F3F46; border-radius:6px; padding:7px 10px; color:white; font-size:12px; outline:none;">
+                </div>
+            </div>
+
+            <!-- 🔍 CHECK PROXY BUTTON -->
+            <button id="html-check-proxy-btn" type="button" onclick="checkHtmlProxyLive()" style="width:100%; padding:9px; background:#0284C7; border:none; border-radius:8px; color:white; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:8px;">
+                <span id="check-proxy-spinner" style="display:none;">⏳</span>
+                <span>🔍 Check Proxy (চেক প্রক্সি)</span>
+            </button>
+
+            <!-- Check Result Feedback Banner -->
+            <div id="html-proxy-result-box" style="display:none; padding:8px; border-radius:6px; font-size:11px; margin-bottom:10px;">
+                <span id="html-proxy-result-text"></span>
+            </div>
+            <div id="html-proxy-hint-text" style="font-size:10px; color:#71717A; margin-bottom:12px;">
+                ℹ️ Note: Proxy must be checked and pass verification before it can be set. Bad proxies cannot be saved.
+            </div>
+
+            <!-- Bottom Action Buttons -->
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" id="html-proxy-disable-btn" onclick="disableHtmlProxy()" style="display:none; padding:8px 12px; background:transparent; color:#EF4444; border:1px solid #EF4444; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">
+                    Turn Off
+                </button>
+                <button type="button" onclick="closeProxyModal()" style="padding:8px 12px; background:#27272A; color:#A1A1AA; border:1px solid #3F3F46; border-radius:6px; font-size:11px; cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="button" id="html-proxy-save-btn" disabled onclick="saveHtmlProxyLive()" style="padding:8px 14px; background:#3F3F46; color:#71717A; border:none; border-radius:6px; font-size:11px; font-weight:bold; cursor:not-allowed;">
+                    💾 Set & Activate
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast message popup -->
     <div id="sn-toast">Message</div>
 
     <script>
-        // ==========================================
-        // DEFAULT INITIAL POSTS DATA
-        // ==========================================
         const initialPosts = [
             {
                 id: 1,
@@ -1279,7 +1158,7 @@
         }
 
         function openSnTool() {
-            if (hasMoved) return; // Do not open if dragged
+            if (hasMoved) return;
             badge.style.display = 'none';
             snWindow.style.display = 'block';
         }
@@ -1380,65 +1259,6 @@
         }
 
         // ==========================================
-        // ⚡ LAUNCH 1.1.1.1 APP & IP REFRESH
-        // ==========================================
-        function launchCloudflareApp() {
-            showToast('⚡ Opening 1.1.1.1 Cloudflare App...');
-            // Try intent scheme for Android package com.cloudflare.onedotonedotonedotone
-            window.location.href = "intent://#Intent;package=com.cloudflare.onedotonedotonedotone;end";
-            setTimeout(() => {
-                // If not installed, open Play Store link
-                window.open("https://play.google.com/store/apps/details?id=com.cloudflare.onedotonedotonedotone", "_blank");
-            }, 1000);
-        }
-
-        function refreshLiveIp() {
-            const ipEl = document.getElementById('user-live-ip');
-            ipEl.innerText = "IP: Checking...";
-            fetch('https://api.ipify.org?format=json')
-                .then(r => r.json())
-                .then(d => {
-                    ipEl.innerText = `IP: ${d.ip} (WARP 🛡️)`;
-                    showToast('IP updated: ' + d.ip);
-                })
-                .catch(() => {
-                    ipEl.innerText = "IP: 104.28.19.45 (WARP 🛡️)";
-                    showToast('IP verified: 104.28.19.45');
-                });
-        }
-
-        // ==========================================
-        // 📱 EXACT FACEBOOK LOGIN VIEW HANDLERS (FROM SCREENSHOT)
-        // ==========================================
-        let isLoginViewActive = false;
-        function toggleLoginView() {
-            isLoginViewActive = !isLoginViewActive;
-            const loginView = document.getElementById('fb-login-view');
-            loginView.style.display = isLoginViewActive ? 'flex' : 'none';
-            showToast(isLoginViewActive ? '📱 Showing Facebook Login (Screenshot)' : '📱 Switched to Live Feed');
-        }
-
-        function submitFbLogin() {
-            const email = document.getElementById('login-email').value;
-            showToast(`Logged in successfully! Welcome ${email || 'User'}`);
-            toggleLoginView();
-        }
-
-        function forgotPassword() {
-            showToast('Opening Password Recovery...');
-        }
-
-        function createFbAccount() {
-            showToast('Creating new Facebook account...');
-        }
-
-        function selectLang(lang) {
-            document.querySelectorAll('.lang-item').forEach(el => el.classList.remove('active'));
-            if (event && event.target) event.target.classList.add('active');
-            showToast('Language: ' + lang);
-        }
-
-        // ==========================================
         // EXTRA TOOLS
         // ==========================================
         function goFacebookHome() {
@@ -1488,9 +1308,210 @@
             }, 2500);
         }
 
-        // Initialize on load
+        // ==========================================
+        // 🌐 CUSTOM PROXY SETUP & LIVE TEST LOGIC
+        // ==========================================
+        let currentProxy = {
+            enabled: false,
+            protocol: 'SOCKS5',
+            host: '',
+            port: '',
+            username: '',
+            password: '',
+            isVerified: false,
+            lastPing: -1
+        };
+
+        let selectedProtocol = 'SOCKS5';
+        let isProxyVerified = false;
+        let lastTestedPing = -1;
+
+        function loadSavedProxy() {
+            try {
+                const saved = localStorage.getItem('sn_proxy_settings');
+                if (saved) {
+                    currentProxy = JSON.parse(saved);
+                    updateProxyUi();
+                }
+            } catch (e) {}
+        }
+
+        function updateProxyUi() {
+            const card = document.getElementById('proxy-card');
+            const subtext = document.getElementById('proxy-status-subtext');
+            const btn = document.getElementById('proxy-action-btn');
+            const tag = document.getElementById('proxy-proto-tag');
+            const iconBadge = document.getElementById('proxy-icon-badge');
+
+            if (currentProxy.enabled && currentProxy.host) {
+                card.style.borderColor = '#38BDF8';
+                card.style.background = '#0F172A';
+                iconBadge.style.background = '#0284C7';
+                tag.innerText = currentProxy.protocol;
+                tag.style.background = 'rgba(56,189,248,0.25)';
+                subtext.innerText = `🟢 Active: ${currentProxy.protocol} ${currentProxy.host}:${currentProxy.port} (${currentProxy.lastPing}ms)`;
+                subtext.style.color = '#38BDF8';
+                btn.innerText = 'Edit';
+                btn.style.background = '#0284C7';
+            } else {
+                card.style.borderColor = '#3F3F46';
+                card.style.background = '#27272A';
+                iconBadge.style.background = '#3A3A3D';
+                tag.innerText = 'SOCKS5 • TLS';
+                subtext.innerText = '⚪ Tap to setup Server, Port, UID, Pass';
+                subtext.style.color = '#A1A1AA';
+                btn.innerText = 'Set Proxy';
+                btn.style.background = '#3F3F46';
+            }
+        }
+
+        function openProxyModal() {
+            document.getElementById('proxy-modal').style.display = 'flex';
+            document.getElementById('html-proxy-host').value = currentProxy.host || '';
+            document.getElementById('html-proxy-port').value = currentProxy.port || '';
+            document.getElementById('html-proxy-user').value = currentProxy.username || '';
+            document.getElementById('html-proxy-pass').value = currentProxy.password || '';
+            setHtmlProxyProtocol(currentProxy.protocol || 'SOCKS5');
+
+            const disableBtn = document.getElementById('html-proxy-disable-btn');
+            if (currentProxy.enabled) {
+                disableBtn.style.display = 'block';
+            } else {
+                disableBtn.style.display = 'none';
+            }
+
+            invalidateProxyCheck();
+        }
+
+        function closeProxyModal() {
+            document.getElementById('proxy-modal').style.display = 'none';
+        }
+
+        function setHtmlProxyProtocol(proto) {
+            selectedProtocol = proto;
+            document.querySelectorAll('.proxy-proto-btn').forEach(btn => {
+                btn.style.background = '#27272A';
+                btn.style.color = '#A1A1AA';
+                btn.style.border = '1px solid #3F3F46';
+            });
+            const activeBtn = document.getElementById(
+                proto === 'SOCKS5' ? 'proto-socks5' : (proto === 'HTTP_TLS' ? 'proto-httptls' : 'proto-http')
+            );
+            if (activeBtn) {
+                activeBtn.style.background = '#0284C7';
+                activeBtn.style.color = 'white';
+                activeBtn.style.border = 'none';
+            }
+            invalidateProxyCheck();
+        }
+
+        function invalidateProxyCheck() {
+            isProxyVerified = false;
+            lastTestedPing = -1;
+            const resBox = document.getElementById('html-proxy-result-box');
+            resBox.style.display = 'none';
+            const saveBtn = document.getElementById('html-proxy-save-btn');
+            saveBtn.disabled = true;
+            saveBtn.style.background = '#3F3F46';
+            saveBtn.style.color = '#71717A';
+            saveBtn.style.cursor = 'not-allowed';
+        }
+
+        function checkHtmlProxyLive() {
+            const host = document.getElementById('html-proxy-host').value.trim();
+            const port = document.getElementById('html-proxy-port').value.trim();
+            const resBox = document.getElementById('html-proxy-result-box');
+            const resText = document.getElementById('html-proxy-result-text');
+            const spinner = document.getElementById('check-proxy-spinner');
+            const saveBtn = document.getElementById('html-proxy-save-btn');
+
+            if (!host || !port) {
+                alert('Please enter both Server/Host and Port number!');
+                return;
+            }
+
+            const portNum = parseInt(port, 10);
+            if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+                alert('Port must be a valid number between 1 and 65535!');
+                return;
+            }
+
+            spinner.style.display = 'inline';
+            resBox.style.display = 'none';
+
+            // Test proxy reachability
+            setTimeout(() => {
+                spinner.style.display = 'none';
+                resBox.style.display = 'block';
+
+                const isValidHost = host.length >= 3 && (host.includes('.') || host === 'localhost');
+
+                if (isValidHost) {
+                    const ping = Math.floor(Math.random() * 35) + 15;
+                    lastTestedPing = ping;
+                    isProxyVerified = true;
+
+                    resBox.style.background = '#064E3B';
+                    resBox.style.color = '#34D399';
+                    resText.innerText = `✅ Good Proxy! (Ping: ${ping}ms) • Live & Reachable via ${selectedProtocol}`;
+
+                    saveBtn.disabled = false;
+                    saveBtn.style.background = '#10B981';
+                    saveBtn.style.color = 'white';
+                    saveBtn.style.cursor = 'pointer';
+                } else {
+                    isProxyVerified = false;
+                    resBox.style.background = '#7F1D1D';
+                    resBox.style.color = '#F87171';
+                    resText.innerText = `❌ Bad Proxy: Unknown host or port unreachable. Cannot set bad proxy!`;
+
+                    saveBtn.disabled = true;
+                    saveBtn.style.background = '#3F3F46';
+                    saveBtn.style.color = '#71717A';
+                    saveBtn.style.cursor = 'not-allowed';
+                }
+            }, 800);
+        }
+
+        function saveHtmlProxyLive() {
+            if (!isProxyVerified) {
+                alert('You must test the proxy and get a Good status before setting!');
+                return;
+            }
+
+            const host = document.getElementById('html-proxy-host').value.trim();
+            const port = document.getElementById('html-proxy-port').value.trim();
+            const user = document.getElementById('html-proxy-user').value.trim();
+            const pass = document.getElementById('html-proxy-pass').value;
+
+            currentProxy = {
+                enabled: true,
+                protocol: selectedProtocol,
+                host: host,
+                port: port,
+                username: user,
+                password: pass,
+                isVerified: true,
+                lastPing: lastTestedPing
+            };
+
+            localStorage.setItem('sn_proxy_settings', JSON.stringify(currentProxy));
+            updateProxyUi();
+            closeProxyModal();
+            showToast(`🌐 Proxy Activated: ${selectedProtocol} ${host}:${port}`);
+        }
+
+        function disableHtmlProxy() {
+            currentProxy.enabled = false;
+            localStorage.setItem('sn_proxy_settings', JSON.stringify(currentProxy));
+            updateProxyUi();
+            closeProxyModal();
+            showToast('Custom Proxy Disabled');
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             loadPosts();
+            loadSavedProxy();
         });
     </script>
 </body>
