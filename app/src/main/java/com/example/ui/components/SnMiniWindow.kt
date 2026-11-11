@@ -28,59 +28,34 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DesktopWindows
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.OpenWith
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Smartphone
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.ZoomIn
-import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import com.example.model.GeoIpInfo
-import com.example.model.ProxyProtocol
-import com.example.model.ProxySettings
-import com.example.model.ProxyTester
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -124,19 +99,9 @@ fun SnMiniWindowOverlay(
     onZoomOut: () -> Unit,
     isVpnConnected: Boolean,
     onToggleVpn: () -> Unit,
-    proxySettings: ProxySettings = ProxySettings(),
-    onToggleProxy: () -> Unit = {},
-    onSaveProxy: (ProxySettings) -> Unit = {},
-    onDisableProxy: () -> Unit = {},
-    currentIpInfo: GeoIpInfo? = null,
-    onCheckCurrentIp: () -> Unit = {},
-    onOpenIpCheckWeb: () -> Unit = {},
-    onOpenCreateAccount: () -> Unit = {},
-    onOpenForgotPassword: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
-    var showProxyDialog by remember { mutableStateOf(false) }
     var isReloadingAnim by remember { mutableStateOf(false) }
 
     val reloadRotation by animateFloatAsState(
@@ -145,22 +110,6 @@ fun SnMiniWindowOverlay(
         finishedListener = { isReloadingAnim = false },
         label = "ReloadRotation"
     )
-
-    // Proxy Setup & Live Check Dialog
-    if (showProxyDialog) {
-        ProxySetupDialog(
-            initialSettings = proxySettings,
-            onDismiss = { showProxyDialog = false },
-            onSaveProxy = { newSettings ->
-                showProxyDialog = false
-                onSaveProxy(newSettings)
-            },
-            onDisableProxy = {
-                showProxyDialog = false
-                onDisableProxy()
-            }
-        )
-    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -245,7 +194,6 @@ fun SnMiniWindowOverlay(
                 // Minimized "SN" Floating Badge / Pill
                 SnFloatingBadge(
                     isVpnConnected = isVpnConnected,
-                    proxySettings = proxySettings,
                     onTap = { onToggleExpanded(true) },
                     onQuickReload = {
                         isReloadingAnim = true
@@ -264,15 +212,6 @@ fun SnMiniWindowOverlay(
                     reloadRotation = reloadRotation,
                     isVpnConnected = isVpnConnected,
                     onToggleVpn = onToggleVpn,
-                    proxySettings = proxySettings,
-                    onToggleProxy = onToggleProxy,
-                    onOpenProxyDialog = { showProxyDialog = true },
-                    onDisableProxy = onDisableProxy,
-                    currentIpInfo = currentIpInfo,
-                    onCheckCurrentIp = onCheckCurrentIp,
-                    onOpenIpCheckWeb = onOpenIpCheckWeb,
-                    onOpenCreateAccount = onOpenCreateAccount,
-                    onOpenForgotPassword = onOpenForgotPassword,
                     onReloadClick = {
                         isReloadingAnim = true
                         onReload()
@@ -304,7 +243,6 @@ fun SnMiniWindowOverlay(
 @Composable
 private fun SnFloatingBadge(
     isVpnConnected: Boolean,
-    proxySettings: ProxySettings,
     onTap: () -> Unit,
     onQuickReload: () -> Unit,
     modifier: Modifier = Modifier
@@ -318,9 +256,7 @@ private fun SnFloatingBadge(
             .border(
                 width = 1.8.dp,
                 brush = Brush.linearGradient(
-                    colors = if (proxySettings.enabled) {
-                        listOf(Color(0xFF0284C7), Color(0xFF38BDF8), Color(0xFF00D2FF))
-                    } else if (isVpnConnected) {
+                    colors = if (isVpnConnected) {
                         listOf(CloudflareOrange, Color(0xFFFAAD3F), VpnConnectedGreen)
                     } else {
                         listOf(WinHeaderBlue, FbBlue, Color(0xFF00C6FF))
@@ -328,25 +264,16 @@ private fun SnFloatingBadge(
                 ),
                 shape = RoundedCornerShape(24.dp)
             ),
-        color = Color(0xFF1E1E1E)
+        shape = RoundedCornerShape(24.dp),
+        color = Color(0xFF1E1E22).copy(alpha = 0.94f)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            // Drag grip indicator
-            Icon(
-                imageVector = Icons.Default.DragIndicator,
-                contentDescription = "Drag SN tool",
-                tint = Color(0xFFAAAAAA),
-                modifier = Modifier.size(16.dp)
-            )
+            WindowsTileLogo(size = 13.dp)
 
-            // Windows Logo Symbol
-            WindowsTileLogo(size = 15.dp)
-
-            // "SN" Name Tag
             Text(
                 text = "SN",
                 color = Color.White,
@@ -355,22 +282,7 @@ private fun SnFloatingBadge(
                 letterSpacing = 0.5.sp
             )
 
-            // Custom Proxy active indicator
-            if (proxySettings.enabled) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFF0284C7))
-                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = proxySettings.protocol.displayName,
-                        color = Color.White,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            } else if (isVpnConnected) {
+            if (isVpnConnected) {
                 // 1.1.1.1 VPN active indicator
                 Box(
                     modifier = Modifier
@@ -414,15 +326,6 @@ private fun SnFloatingWindowCard(
     reloadRotation: Float,
     isVpnConnected: Boolean,
     onToggleVpn: () -> Unit,
-    proxySettings: ProxySettings,
-    onToggleProxy: () -> Unit,
-    onOpenProxyDialog: () -> Unit,
-    onDisableProxy: () -> Unit,
-    currentIpInfo: GeoIpInfo?,
-    onCheckCurrentIp: () -> Unit,
-    onOpenIpCheckWeb: () -> Unit,
-    onOpenCreateAccount: () -> Unit,
-    onOpenForgotPassword: () -> Unit,
     onReloadClick: () -> Unit,
     onClearDataClick: () -> Unit,
     onGoHome: () -> Unit,
@@ -439,7 +342,7 @@ private fun SnFloatingWindowCard(
     Card(
         modifier = modifier
             .testTag("sn_mini_window_card")
-            .widthIn(min = 290.dp, max = 320.dp)
+            .widthIn(min = 280.dp, max = 310.dp)
             .shadow(elevation = 18.dp, shape = RoundedCornerShape(12.dp))
             .border(
                 width = 1.dp,
@@ -652,300 +555,6 @@ private fun SnFloatingWindowCard(
                     }
                 }
 
-                // ==========================================
-                // 🌐 CUSTOM PROXY SETUP CARD (SOCKS5 / HTTP+TLS / HTTP)
-                // ==========================================
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("sn_proxy_card"),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (proxySettings.enabled) Color(0xFF0F172A) else Color(0xFF27272A)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 1.dp,
-                        color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFF3F3F46)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(if (proxySettings.enabled) Color(0xFF0284C7) else Color(0xFF3A3A3D)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Dns,
-                                        contentDescription = "Custom Proxy",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "Custom Proxy",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = Color.White
-                                        )
-                                        Spacer(modifier = Modifier.width(5.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(Color(0xFF38BDF8).copy(alpha = 0.2f))
-                                                .padding(horizontal = 4.dp, vertical = 1.dp)
-                                        ) {
-                                            Text(
-                                                text = proxySettings.protocol.displayName,
-                                                color = Color(0xFF38BDF8),
-                                                fontSize = 8.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        text = if (proxySettings.enabled) {
-                                            "🟢 Connected: ${proxySettings.host}:${proxySettings.port}" +
-                                                if (proxySettings.lastPingMs > 0) " (${proxySettings.lastPingMs}ms)" else ""
-                                        } else if (proxySettings.host.isNotBlank()) {
-                                            "⚪ Disconnected • Tap switch to ON"
-                                        } else {
-                                            "⚪ Not configured • Tap ⚙️ to setup"
-                                        },
-                                        fontSize = 10.sp,
-                                        color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFFA1A1AA)
-                                    )
-                                }
-                            }
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Settings / Edit button
-                                IconButton(
-                                    onClick = onOpenProxyDialog,
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Settings,
-                                        contentDescription = "Edit Proxy",
-                                        tint = Color(0xFF38BDF8),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(4.dp))
-
-                                // Direct ON/OFF Switch ("ar proxy off on baton diyo")
-                                Switch(
-                                    checked = proxySettings.enabled,
-                                    onCheckedChange = { onToggleProxy() },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.White,
-                                        checkedTrackColor = Color(0xFF0284C7),
-                                        uncheckedThumbColor = Color(0xFFA1A1AA),
-                                        uncheckedTrackColor = Color(0xFF1E1E20)
-                                    ),
-                                    modifier = Modifier.size(width = 44.dp, height = 24.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // ==========================================
-                // 📍 LIVE IP & COUNTRY STATUS CARD
-                // ==========================================
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("sn_live_ip_card"),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF18181B)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 1.dp,
-                        color = Color(0xFF2E2E33)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(9.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = currentIpInfo?.flag ?: "🌐",
-                                    fontSize = 18.sp
-                                )
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "Active IP: ",
-                                            fontSize = 11.sp,
-                                            color = Color(0xFFA1A1AA)
-                                        )
-                                        Text(
-                                            text = if (!currentIpInfo?.ip.isNullOrBlank()) currentIpInfo?.ip!! else "Fetching...",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
-                                    Text(
-                                        text = "Country: ${if (!currentIpInfo?.country.isNullOrBlank()) currentIpInfo?.country else "Checking location..."}" +
-                                            if (!currentIpInfo?.city.isNullOrBlank()) " (${currentIpInfo?.city})" else "",
-                                        fontSize = 10.sp,
-                                        color = if (proxySettings.enabled) Color(0xFF38BDF8) else Color(0xFF10B981)
-                                    )
-                                }
-                            }
-
-                            // Refresh IP button
-                            IconButton(
-                                onClick = onCheckCurrentIp,
-                                modifier = Modifier.size(26.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Refresh IP & Location",
-                                    tint = Color(0xFF38BDF8),
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
-                        }
-
-                        // Button to verify external IP in browser
-                        OutlinedButton(
-                            onClick = onOpenIpCheckWeb,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(26.dp),
-                            shape = RoundedCornerShape(4.dp),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Public,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(12.dp),
-                                    tint = Color(0xFF38BDF8)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "🌐 Verify on WhatIsMyIP.com",
-                                    fontSize = 10.sp,
-                                    color = Color(0xFF38BDF8)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // ==========================================
-                // 🔑 FACEBOOK PAGES: FORGOT & CREATE ACCOUNT
-                // ==========================================
-                Text(
-                    text = "ACCOUNT & FB PAGES",
-                    color = Color(0xFF71717A),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Create Account Button ("accunt create oage")
-                    Button(
-                        onClick = onOpenCreateAccount,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("sn_create_account_btn"),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF15803D), // Facebook Green
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PersonAdd,
-                                contentDescription = "Create Account",
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Create A/C",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-
-                    // Forgot Password Button ("Forget page ekta diba")
-                    Button(
-                        onClick = onOpenForgotPassword,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("sn_forgot_password_btn"),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF475569),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Key,
-                                contentDescription = "Forgot Password",
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Forgot Pass",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-                }
-
                 // Primary Request Buttons: Reload & Clear Data
                 Text(
                     text = "QUICK ACTIONS",
@@ -1022,131 +631,169 @@ private fun SnFloatingWindowCard(
                     }
                 }
 
-                // Additional Quick Controls Bar
+                // Additional Quick Controls Bar (Home, Dark, PC, Zoom - সমান তলে সারিবদ্ধ)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Home Button
                     OutlinedButton(
                         onClick = onGoHome,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Facebook Home",
-                            modifier = Modifier.size(14.dp),
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Home",
-                            fontSize = 11.sp,
-                            color = Color.White
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Desktop / Mobile Mode Switcher
-                    OutlinedButton(
-                        onClick = onToggleDesktopMode,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isDesktopMode) Icons.Default.DesktopWindows else Icons.Default.Smartphone,
-                            contentDescription = "Toggle Desktop Mode",
-                            modifier = Modifier.size(14.dp),
-                            tint = if (isDesktopMode) Color(0xFF38BDF8) else Color.White
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (isDesktopMode) "PC View" else "Mobile",
-                            fontSize = 11.sp,
-                            color = if (isDesktopMode) Color(0xFF38BDF8) else Color.White
-                        )
-                    }
-                }
-
-                // Dark mode and Zoom controls row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Dark mode toggle
-                    OutlinedButton(
-                        onClick = onToggleDarkMode,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = "Toggle Dark Mode",
-                            modifier = Modifier.size(14.dp),
-                            tint = if (isDarkMode) Color(0xFFFBBF24) else Color.White
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (isDarkMode) "Light" else "Dark",
-                            fontSize = 11.sp,
-                            color = Color.White
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Zoom Controls
-                    Row(
                         modifier = Modifier
                             .weight(1f)
-                            .background(Color(0xFF27272A), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 2.dp, vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                            .height(36.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3F3F46)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color(0xFF27272A),
+                            contentColor = Color.White
+                        ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 2.dp, vertical = 0.dp)
                     ) {
-                        IconButton(
-                            onClick = onZoomOut,
-                            modifier = Modifier.size(28.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ZoomOut,
-                                contentDescription = "Zoom out",
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Facebook Home",
+                                modifier = Modifier.size(13.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "Home",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
+                    }
 
-                        Text(
-                            text = "Zoom",
-                            fontSize = 10.sp,
-                            color = Color(0xFFA1A1AA)
-                        )
+                    // Dark Mode Toggle
+                    OutlinedButton(
+                        onClick = onToggleDarkMode,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3F3F46)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color(0xFF27272A),
+                            contentColor = Color.White
+                        ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 2.dp, vertical = 0.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = "Dark mode",
+                                modifier = Modifier.size(13.dp),
+                                tint = if (isDarkMode) Color(0xFFFFD54F) else Color.White
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = if (isDarkMode) "Light" else "Dark",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
 
-                        IconButton(
-                            onClick = onZoomIn,
-                            modifier = Modifier.size(28.dp)
+                    // Desktop Mode Toggle
+                    OutlinedButton(
+                        onClick = onToggleDesktopMode,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3F3F46)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color(0xFF27272A),
+                            contentColor = Color.White
+                        ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 2.dp, vertical = 0.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isDesktopMode) Icons.Default.Smartphone else Icons.Default.DesktopWindows,
+                                contentDescription = "Desktop mode",
+                                modifier = Modifier.size(13.dp),
+                                tint = if (isDesktopMode) Color(0xFF00D2FF) else Color.White
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = if (isDesktopMode) "Mobile" else "PC",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+
+                    // Zoom In button
+                    OutlinedButton(
+                        onClick = onZoomIn,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3F3F46)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color(0xFF27272A),
+                            contentColor = Color.White
+                        ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 2.dp, vertical = 0.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ZoomIn,
-                                contentDescription = "Zoom in",
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
+                                contentDescription = "Zoom In",
+                                modifier = Modifier.size(13.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "Zoom",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
                 }
 
-                // Footer drag guidance
-                Text(
-                    text = "💡 Tip: Drag window anywhere to reposition",
-                    color = Color(0xFF71717A),
-                    fontSize = 10.sp,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                // Drag and position tip
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "💡 Hold & Drag to move anywhere on screen",
+                        color = Color(0xFF71717A),
+                        fontSize = 10.sp
+                    )
+                }
             }
         }
     }
@@ -1189,398 +836,3 @@ fun WindowsTileLogo(size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modi
         }
     }
 }
-
-/**
- * Custom Proxy Setup & Live Check Dialog (SOCKS5, HTTP+TLS, HTTP)
- * Only allows saving if the proxy check succeeds!
- */
-@Composable
-fun ProxySetupDialog(
-    initialSettings: ProxySettings,
-    onDismiss: () -> Unit,
-    onSaveProxy: (ProxySettings) -> Unit,
-    onDisableProxy: () -> Unit
-) {
-    var selectedProtocol by remember { mutableStateOf(initialSettings.protocol) }
-    var host by remember { mutableStateOf(initialSettings.host) }
-    var port by remember { mutableStateOf(initialSettings.port) }
-    var username by remember { mutableStateOf(initialSettings.username) }
-    var password by remember { mutableStateOf(initialSettings.password) }
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    var isChecking by remember { mutableStateOf(false) }
-    var checkResultSuccess by remember { mutableStateOf<Boolean?>(if (initialSettings.isVerified) true else null) }
-    var checkResultMessage by remember {
-        mutableStateOf<String?>(
-            if (initialSettings.isVerified) "Proxy is verified (Ping: ${initialSettings.lastPingMs}ms)" else null
-        )
-    }
-    var verifiedPing by remember { mutableStateOf(if (initialSettings.isVerified) initialSettings.lastPingMs else -1L) }
-    var verifiedGeo by remember {
-        mutableStateOf<GeoIpInfo?>(
-            if (initialSettings.detectedIp.isNotBlank()) {
-                GeoIpInfo(
-                    ip = initialSettings.detectedIp,
-                    country = initialSettings.detectedCountry,
-                    flag = initialSettings.detectedFlag,
-                    isProxy = true
-                )
-            } else null
-        )
-    }
-
-    val coroutineScope = rememberCoroutineScope()
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF0284C7)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Dns,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = "Custom Proxy Setup",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "SOCKS5 • HTTP + TLS • HTTP",
-                        fontSize = 11.sp,
-                        color = Color(0xFF38BDF8)
-                    )
-                }
-            }
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Protocol Selection Chips
-                Text(
-                    text = "Select Protocol (প্রোটোকল নির্বাচন করুন):",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFD4D4D8)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    ProxyProtocol.values().forEach { proto ->
-                        val isSelected = selectedProtocol == proto
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = {
-                                selectedProtocol = proto
-                                // Invalidate check on protocol change
-                                checkResultSuccess = null
-                                checkResultMessage = null
-                                verifiedPing = -1L
-                            },
-                            label = {
-                                Text(
-                                    text = proto.displayName,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF0284C7),
-                                selectedLabelColor = Color.White,
-                                containerColor = Color(0xFF27272A),
-                                labelColor = Color(0xFFA1A1AA)
-                            )
-                        )
-                    }
-                }
-
-                // Server (Host) & Port Inputs
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = host,
-                        onValueChange = {
-                            host = it
-                            checkResultSuccess = null
-                            checkResultMessage = null
-                            verifiedPing = -1L
-                        },
-                        label = { Text("Server / Host", fontSize = 11.sp) },
-                        placeholder = { Text("e.g. 192.168.1.1", fontSize = 11.sp) },
-                        singleLine = true,
-                        modifier = Modifier
-                            .weight(2f)
-                            .testTag("proxy_host_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF38BDF8),
-                            unfocusedBorderColor = Color(0xFF3F3F46),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = port,
-                        onValueChange = {
-                            if (it.length <= 5) {
-                                port = it.filter { char -> char.isDigit() }
-                                checkResultSuccess = null
-                                checkResultMessage = null
-                                verifiedPing = -1L
-                            }
-                        },
-                        label = { Text("Port", fontSize = 11.sp) },
-                        placeholder = { Text("1080", fontSize = 11.sp) },
-                        singleLine = true,
-                        modifier = Modifier
-                            .weight(1.2f)
-                            .testTag("proxy_port_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF38BDF8),
-                            unfocusedBorderColor = Color(0xFF3F3F46),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        )
-                    )
-                }
-
-                // UID (Username) & Pass (Password)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = {
-                            username = it
-                            checkResultSuccess = null
-                            checkResultMessage = null
-                            verifiedPing = -1L
-                        },
-                        label = { Text("UID / Username", fontSize = 11.sp) },
-                        placeholder = { Text("Optional", fontSize = 11.sp) },
-                        singleLine = true,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("proxy_user_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF38BDF8),
-                            unfocusedBorderColor = Color(0xFF3F3F46),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            checkResultSuccess = null
-                            checkResultMessage = null
-                            verifiedPing = -1L
-                        },
-                        label = { Text("Pass", fontSize = 11.sp) },
-                        placeholder = { Text("Optional", fontSize = 11.sp) },
-                        singleLine = true,
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle password",
-                                    tint = Color(0xFFA1A1AA),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("proxy_pass_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF38BDF8),
-                            unfocusedBorderColor = Color(0xFF3F3F46),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        )
-                    )
-                }
-
-                // CHECK PROXY BUTTON ("check option diyo proxy option ta jeno kaj kore")
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            isChecking = true
-                            checkResultSuccess = null
-                            checkResultMessage = null
-
-                            val result = ProxyTester.checkProxy(
-                                protocol = selectedProtocol,
-                                host = host.trim(),
-                                portText = port.trim(),
-                                username = username.trim(),
-                                password = password
-                            )
-
-                            isChecking = false
-                            if (result.isSuccess) {
-                                val (ping, geo) = result.getOrNull() ?: Pair(25L, null)
-                                verifiedPing = ping
-                                verifiedGeo = geo
-                                checkResultSuccess = true
-                                val countryTag = if (geo != null && geo.country.isNotBlank()) " • ${geo.flag} ${geo.country} (${geo.ip})" else ""
-                                checkResultMessage = "✅ Good Proxy! (Ping: ${ping}ms)$countryTag • Live & Reachable"
-                            } else {
-                                verifiedPing = -1L
-                                verifiedGeo = null
-                                checkResultSuccess = false
-                                val err = result.exceptionOrNull()?.message ?: "Connection failed"
-                                checkResultMessage = "❌ Bad Proxy: $err"
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("check_proxy_button"),
-                    enabled = !isChecking && host.isNotBlank() && port.isNotBlank(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0284C7)
-                    )
-                ) {
-                    if (isChecking) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Checking Proxy Connection...", fontSize = 12.sp)
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "🔍 Check Proxy (চেক প্রক্সি)",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-
-                // Check Result Feedback Banner
-                if (checkResultMessage != null) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(6.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (checkResultSuccess == true) Color(0xFF064E3B) else Color(0xFF7F1D1D)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (checkResultSuccess == true) Icons.Default.CheckCircle else Icons.Default.Error,
-                                contentDescription = null,
-                                tint = if (checkResultSuccess == true) Color(0xFF34D399) else Color(0xFFF87171),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = checkResultMessage ?: "",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = "ℹ️ Note: You must Check Proxy and get a 'Good Proxy' status before setting. Bad proxies cannot be saved.",
-                        fontSize = 10.sp,
-                        color = Color(0xFF71717A)
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            // SET / SAVE BUTTON: Only enabled if check succeeded! ("proxy cek kore jodi proxy valo hoy tahole set hobe kharap hole set hobe na")
-            Button(
-                onClick = {
-                    val settings = ProxySettings(
-                        enabled = true,
-                        protocol = selectedProtocol,
-                        host = host.trim(),
-                        port = port.trim(),
-                        username = username.trim(),
-                        password = password,
-                        isVerified = true,
-                        lastPingMs = verifiedPing,
-                        detectedIp = verifiedGeo?.ip ?: "",
-                        detectedCountry = verifiedGeo?.country ?: "",
-                        detectedFlag = verifiedGeo?.flag ?: "🌐"
-                    )
-                    onSaveProxy(settings)
-                },
-                enabled = checkResultSuccess == true && host.isNotBlank() && port.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF10B981),
-                    disabledContainerColor = Color(0xFF3F3F46)
-                ),
-                shape = RoundedCornerShape(6.dp),
-                modifier = Modifier.testTag("save_proxy_button")
-            ) {
-                Text(
-                    text = "💾 Set & Activate",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    color = Color.White
-                )
-            }
-        },
-        dismissButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (initialSettings.enabled) {
-                    TextButton(
-                        onClick = onDisableProxy,
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))
-                    ) {
-                        Text("Turn Off", fontSize = 12.sp)
-                    }
-                }
-                TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = Color(0xFFA1A1AA), fontSize = 12.sp)
-                }
-            }
-        },
-        containerColor = Color(0xFF1E1E22),
-        shape = RoundedCornerShape(12.dp)
-    )
-}
-

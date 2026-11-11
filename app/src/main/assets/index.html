@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SN Facebook - Windows Mini Tool with 1.1.1.1 VPN</title>
+    <title>SN Facebook - Windows Mini</title>
     <style>
         :root {
             --fb-blue: #1877F2;
-            --fb-blue-dark: #0d65d9;
+            --fb-blue-hover: #166FE5;
+            --fb-green: #42B72A;
+            --fb-green-hover: #36A420;
             --fb-bg: #F0F2F5;
             --fb-card-bg: #FFFFFF;
-            --fb-text: #050505;
+            --fb-text: #1C1E21;
             --fb-subtext: #65676B;
+            --fb-input-bg: #F5F6F7;
+            --fb-border: #CCD0D5;
             --fb-divider: #CED0D4;
-            --fb-hover: #E4E6EB;
             --win-bg: #202023;
             --win-titlebar: #18181B;
             --win-border: #3F3F46;
@@ -26,8 +29,9 @@
             --fb-card-bg: #242526;
             --fb-text: #E4E6EB;
             --fb-subtext: #B0B3B8;
-            --fb-divider: #3A3B3C;
-            --fb-hover: #3A3B3C;
+            --fb-input-bg: #3A3B3C;
+            --fb-border: #3E4042;
+            --fb-divider: #393A3B;
         }
 
         * {
@@ -38,12 +42,13 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        body, html {
+        html, body {
             width: 100%;
             height: 100%;
-            background-color: var(--fb-bg);
+            background: var(--fb-bg);
             color: var(--fb-text);
             overflow: hidden;
+            position: relative;
         }
 
         #app-root {
@@ -51,260 +56,204 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Top Facebook Header */
-        .fb-header {
-            background: var(--fb-card-bg);
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-            z-index: 100;
-        }
-
-        .fb-header .logo {
-            font-size: 26px;
-            font-weight: 900;
-            color: var(--fb-blue);
-            letter-spacing: -1px;
-            cursor: pointer;
-        }
-
-        .fb-header-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .icon-circle-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--fb-hover);
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: var(--fb-text);
-            cursor: pointer;
-        }
-
-        /* Navigation Tab Bar */
-        .fb-tabs {
-            background: var(--fb-card-bg);
-            display: flex;
-            border-bottom: 1px solid var(--fb-divider);
-            z-index: 99;
-        }
-
-        .fb-tab {
-            flex: 1;
-            padding: 10px 0;
-            text-align: center;
-            font-size: 20px;
-            color: var(--fb-subtext);
-            border-bottom: 3px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .fb-tab.active {
-            color: var(--fb-blue);
-            border-bottom-color: var(--fb-blue);
-        }
-
-        /* Scrollable Feed Container */
-        #feed-scroll-container {
-            flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 40px;
         }
 
-        /* Create Post Card */
-        .create-post-card {
+        /* Top Header (Matching user's screenshot) */
+        .fb-header {
             background: var(--fb-card-bg);
-            padding: 12px;
-            margin-bottom: 8px;
-        }
-
-        .create-post-top {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--fb-blue);
-            color: white;
-            font-weight: bold;
+            padding: 14px 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
+            border-bottom: 1px solid var(--fb-divider);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        .post-input-fake {
-            flex: 1;
-            background: var(--fb-bg);
-            padding: 10px 16px;
-            border-radius: 20px;
-            color: var(--fb-subtext);
-            font-size: 14px;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
-
-        .create-post-actions {
-            display: flex;
-            justify-content: space-around;
-            padding-top: 10px;
-            margin-top: 10px;
-            border-top: 1px solid var(--fb-divider);
-        }
-
-        .create-action-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: none;
-            border: none;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--fb-subtext);
+        .fb-header .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--fb-blue);
+            letter-spacing: -0.5px;
             cursor: pointer;
         }
 
-        /* Stories Carousel */
-        .stories-carousel {
-            background: var(--fb-card-bg);
-            padding: 10px 12px;
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            margin-bottom: 8px;
-        }
-
-        .stories-carousel::-webkit-scrollbar {
-            display: none;
-        }
-
-        .story-box {
-            width: 100px;
-            height: 160px;
-            border-radius: 12px;
-            flex-shrink: 0;
-            position: relative;
-            padding: 8px;
+        /* Home Page Container */
+        .fb-home-container {
+            max-width: 480px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            cursor: pointer;
-            overflow: hidden;
+            gap: 12px;
         }
 
-        .story-avatar-ring {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px solid var(--fb-blue);
-            background: rgba(255, 255, 255, 0.9);
-            color: #111;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: bold;
+        .form-label {
+            font-size: 14px;
+            color: var(--fb-text);
+            font-weight: 500;
         }
 
-        /* Post Card */
-        .fb-post-card {
+        .input-group {
+            position: relative;
+            width: 100%;
+        }
+
+        .fb-input {
+            width: 100%;
+            height: 48px;
+            padding: 12px 14px;
+            background: var(--fb-input-bg);
+            border: 1px solid var(--fb-border);
+            border-radius: 6px;
+            font-size: 15px;
+            color: var(--fb-text);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .fb-input:focus {
+            border-color: var(--fb-blue);
             background: var(--fb-card-bg);
-            margin-bottom: 8px;
-            padding: 12px 0 6px 0;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        .post-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 0 12px 10px 12px;
+        .input-info-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8A8D91;
+            font-size: 16px;
+            pointer-events: none;
         }
 
-        .post-header-info {
-            flex: 1;
-        }
-
-        .author-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--fb-text);
-        }
-
-        .post-meta {
-            font-size: 11px;
-            color: var(--fb-subtext);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .post-body-text {
-            font-size: 14px;
-            line-height: 1.45;
-            color: var(--fb-text);
-            padding: 0 12px 10px 12px;
-            white-space: pre-wrap;
-        }
-
-        .post-stats-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 12px 8px 12px;
-            font-size: 12px;
-            color: var(--fb-subtext);
-            border-bottom: 1px solid var(--fb-divider);
-        }
-
-        .post-actions-row {
-            display: flex;
-            justify-content: space-around;
-            padding-top: 4px;
-        }
-
-        .post-interactive-btn {
-            background: none;
+        .btn-fb-login {
+            width: 100%;
+            height: 46px;
+            background: var(--fb-blue);
+            color: white;
             border: none;
-            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: background 0.2s;
+        }
+
+        .btn-fb-login:hover {
+            background: var(--fb-blue-hover);
+        }
+
+        .forgot-link-box {
+            text-align: center;
+            padding: 6px 0;
+        }
+
+        .forgot-link {
+            color: var(--fb-blue);
+            font-size: 14px;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .or-divider {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            font-weight: 600;
+            margin: 12px 0;
             color: var(--fb-subtext);
+            font-size: 13px;
+        }
+
+        .or-divider::before, .or-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--fb-border);
+        }
+
+        .or-divider span {
+            padding: 0 12px;
+        }
+
+        .create-btn-box {
+            text-align: center;
+        }
+
+        .btn-fb-create {
+            display: inline-block;
+            background: var(--fb-green);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
             cursor: pointer;
-            border-radius: 4px;
+            transition: background 0.2s;
         }
 
-        .post-interactive-btn.liked {
+        .btn-fb-create:hover {
+            background: var(--fb-green-hover);
+        }
+
+        /* Languages section (matching user's screenshot) */
+        .languages-section {
+            margin-top: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .lang-active {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--fb-text);
+        }
+
+        .lang-link {
+            font-size: 14px;
             color: var(--fb-blue);
+            text-decoration: none;
+            cursor: pointer;
         }
 
-        .post-interactive-btn:active {
-            background: var(--fb-hover);
+        .lang-link.more {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Logged In Feed State */
+        #logged-in-view {
+            display: none;
+            max-width: 480px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .welcome-card {
+            background: var(--fb-card-bg);
+            border-radius: 8px;
+            padding: 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .welcome-card h3 {
+            font-size: 18px;
+            margin-bottom: 6px;
+        }
+
+        .welcome-card p {
+            font-size: 13px;
+            color: var(--fb-subtext);
+            margin-bottom: 16px;
         }
 
         /* ========================================================
@@ -312,8 +261,8 @@
            ======================================================== */
         #sn-floating-container {
             position: fixed;
-            top: 75px;
-            right: 15px;
+            top: 70px;
+            right: 20px;
             z-index: 999999;
             user-select: none;
             touch-action: none;
@@ -321,73 +270,78 @@
 
         /* Minimized Capsule Badge */
         #sn-badge {
-            background: #18181B;
+            background: rgba(30, 30, 34, 0.95);
             border: 2px solid #0078D4;
-            border-radius: 30px;
-            padding: 7px 12px;
+            border-radius: 24px;
+            padding: 8px 12px;
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-            cursor: move;
-            transition: transform 0.1s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: transform 0.15s ease;
         }
 
         #sn-badge:active {
             transform: scale(0.96);
         }
 
+        /* Windows 4-Color Logo */
         .win-logo-grid {
             display: grid;
-            grid-template-columns: 6px 6px;
-            gap: 2px;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5px;
+            width: 14px;
+            height: 14px;
         }
 
-        .win-box {
-            width: 6px;
-            height: 6px;
-            border-radius: 1px;
-        }
+        .win-box { width: 100%; height: 100%; border-radius: 1px; }
         .wb-1 { background: #00A4EF; }
         .wb-2 { background: #0078D4; }
         .wb-3 { background: #2B579A; }
         .wb-4 { background: #00B7C3; }
 
-        .sn-label-text {
+        .sn-text {
             color: #FFFFFF;
             font-weight: 900;
             font-size: 14px;
             letter-spacing: 0.5px;
         }
 
-        .sn-quick-reload-btn {
+        .vpn-mini-tag {
+            background: #F38020;
+            color: white;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 2px 5px;
+            border-radius: 10px;
+        }
+
+        .quick-reload-btn {
+            background: #2C2C2C;
+            border: none;
             width: 22px;
             height: 22px;
             border-radius: 50%;
-            background: #27272A;
-            color: #00D2FF;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: #00D2FF;
             font-size: 11px;
             cursor: pointer;
         }
 
-        /* Expanded "Windows Mini" Floating App Window */
+        /* Expanded Windows Mini Card */
         #sn-window {
             display: none;
-            width: 290px;
+            width: 300px;
             background: var(--win-bg);
             border: 1px solid var(--win-border);
             border-radius: 12px;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.65);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
             overflow: hidden;
-            animation: zoomFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes zoomFadeIn {
-            from { transform: scale(0.85); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            color: #FFFFFF;
         }
 
         .win-titlebar {
@@ -396,32 +350,30 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            cursor: move;
             border-bottom: 1px solid #333338;
+            cursor: move;
         }
 
         .win-title-info {
             display: flex;
             align-items: center;
             gap: 6px;
-            color: #FFFFFF;
             font-size: 12px;
             font-weight: bold;
         }
 
         .win-title-controls {
             display: flex;
-            align-items: center;
             gap: 4px;
         }
 
         .win-btn {
+            background: transparent;
+            border: none;
+            color: #D4D4D8;
             width: 24px;
             height: 24px;
             border-radius: 4px;
-            background: transparent;
-            border: none;
-            color: #A1A1AA;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -430,13 +382,12 @@
         }
 
         .win-btn:hover {
-            background: #3F3F46;
-            color: white;
+            background: rgba(255, 255, 255, 0.1);
         }
 
-        .win-close:hover {
-            background: var(--win-red) !important;
-            color: white !important;
+        .win-btn.win-close:hover {
+            background: var(--win-red);
+            color: white;
         }
 
         .win-content {
@@ -449,12 +400,12 @@
         .win-address-bar {
             background: #27272A;
             border-radius: 6px;
-            padding: 6px 10px;
+            padding: 5px 8px;
+            font-size: 11px;
+            color: #D4D4D8;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 11px;
-            color: #D4D4D8;
         }
 
         .green-dot {
@@ -463,17 +414,104 @@
             background: #22C55E;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 6px;
+            margin-right: 5px;
         }
 
+        /* 1.1.1.1 VPN Card */
+        .vpn-card {
+            background: #27272A;
+            border: 1px solid #F38020;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(243, 128, 32, 0.2);
+        }
+
+        .vpn-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vpn-shield-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #F38020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .vpn-title-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .vpn-title {
+            font-weight: 900;
+            font-size: 13px;
+        }
+
+        .vpn-free-pill {
+            background: rgba(243, 128, 32, 0.25);
+            color: #F38020;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        .vpn-subtext {
+            color: #10B981;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        /* Switch */
+        .switch-wrap {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .switch-wrap input { opacity: 0; width: 0; height: 0; }
+
+        .switch-slider {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #F38020;
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .switch-knob {
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 23px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        /* Quick Actions Section */
         .win-section-title {
             font-size: 10px;
-            font-weight: bold;
             color: #71717A;
-            letter-spacing: 0.8px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-top: 2px;
         }
 
-        /* The 2 Primary Action Buttons: RELOAD & CLEAR DATA */
         .win-primary-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -486,18 +524,13 @@
             border: none;
             padding: 10px;
             border-radius: 8px;
-            font-weight: bold;
             font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(24, 119, 242, 0.35);
-        }
-
-        .btn-action-reload:active {
-            transform: scale(0.97);
         }
 
         .btn-action-clear {
@@ -506,43 +539,35 @@
             border: none;
             padding: 10px;
             border-radius: 8px;
+            font-size: 13px;
             font-weight: bold;
-            font-size: 12px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
         }
 
-        .btn-action-clear:active {
-            transform: scale(0.97);
-        }
-
-        /* Secondary Grid */
+        /* Extra Controls */
         .win-tools-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(4, 1fr);
             gap: 6px;
         }
 
         .btn-tool {
-            background: #27272A;
-            color: #E4E6EB;
+            background: transparent;
+            color: white;
             border: 1px solid #3F3F46;
-            padding: 8px;
             border-radius: 6px;
+            padding: 6px 4px;
             font-size: 11px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
+            text-align: center;
         }
 
-        .btn-tool:active {
-            background: #3F3F46;
+        .btn-tool:hover {
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .win-footer-hint {
@@ -552,73 +577,36 @@
             margin-top: 2px;
         }
 
-        /* Modal Dialog for Clear Data */
+        /* Confirm Modal */
         #confirm-modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.65);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
             z-index: 1000000;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 16px;
         }
 
         .modal-box {
-            background: var(--fb-card-bg);
-            border-radius: 12px;
+            background: #242526;
+            border: 1px solid #3F3F46;
+            border-radius: 10px;
             max-width: 320px;
             width: 100%;
-            padding: 18px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-
-        .modal-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: var(--fb-text);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .modal-body {
-            font-size: 13px;
-            color: var(--fb-subtext);
-            line-height: 1.4;
-            margin-bottom: 16px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-        }
-
-        .modal-btn {
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-        }
-
-        .modal-btn-cancel {
-            background: var(--fb-hover);
-            color: var(--fb-text);
-        }
-
-        .modal-btn-delete {
-            background: #DC2626;
+            padding: 16px;
             color: white;
         }
 
-        /* Toast Notification */
+        .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+        .modal-body { font-size: 13px; color: #A1A1AA; line-height: 1.4; margin-bottom: 16px; }
+        .modal-buttons { display: flex; gap: 8px; justify-content: flex-end; }
+        .modal-btn { padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
+        .modal-btn-cancel { background: #3A3B3C; color: white; }
+        .modal-btn-delete { background: #DC2626; color: white; }
+
+        /* Toast Popup */
         #sn-toast {
             position: fixed;
             bottom: 25px;
@@ -646,66 +634,58 @@
 <body>
 
     <div id="app-root">
-        <!-- Top Facebook Header -->
+        <!-- Top Facebook Header (matching user's screenshot) -->
         <header class="fb-header">
-            <span class="logo" onclick="window.scrollTo({top:0, behavior:'smooth'})">facebook</span>
-            <div class="fb-header-actions">
-                <button class="icon-circle-btn" onclick="openSearch()">🔍</button>
-                <button class="icon-circle-btn" onclick="openMessenger()">💬</button>
-            </div>
+            <span class="logo-text" onclick="goFacebookHome()">Facebook</span>
         </header>
 
-        <!-- Navigation Tabs -->
-        <nav class="fb-tabs">
-            <div class="fb-tab active" onclick="switchTab(this, 'feed')">🏠</div>
-            <div class="fb-tab" onclick="switchTab(this, 'friends')">👥</div>
-            <div class="fb-tab" onclick="switchTab(this, 'watch')">📺</div>
-            <div class="fb-tab" onclick="switchTab(this, 'marketplace')">🏪</div>
-            <div class="fb-tab" onclick="switchTab(this, 'notif')">🔔</div>
-            <div class="fb-tab" onclick="switchTab(this, 'menu')">☰</div>
-        </nav>
-
-        <!-- Scrollable Feed Area -->
-        <div id="feed-scroll-container">
-            <!-- Create Post Card -->
-            <div class="create-post-card">
-                <div class="create-post-top">
-                    <div class="user-avatar">SN</div>
-                    <div class="post-input-fake" onclick="openPostModal()">What's on your mind? (আপনার মনে কি আছে?)</div>
-                </div>
-                <div class="create-post-actions">
-                    <button class="create-action-btn" onclick="openPostModal()"><span style="color:#F02849;">🎥</span> Live</button>
-                    <button class="create-action-btn" onclick="openPostModal()"><span style="color:#45BD62;">🖼️</span> Photo</button>
-                    <button class="create-action-btn" onclick="openPostModal()"><span style="color:#8E24AA;">📹</span> Room</button>
-                </div>
+        <!-- Facebook Mobile Home View (matching user's screenshot) -->
+        <div id="logged-out-view" class="fb-home-container">
+            <label class="form-label">Mobile number or email</label>
+            <div class="input-group">
+                <input type="text" id="fb-email-input" class="fb-input" placeholder="">
+                <span class="input-info-icon">ⓘ</span>
             </div>
 
-            <!-- Stories Carousel -->
-            <div class="stories-carousel">
-                <div class="story-box" style="background: linear-gradient(180deg, #1877F2, #0D5CB6);">
-                    <div class="story-avatar-ring">➕</div>
-                    <span>Create Story<br><small style="font-weight:normal;">You</small></span>
-                </div>
-                <div class="story-box" style="background: linear-gradient(135deg, #8E24AA, #4A148C);">
-                    <div class="story-avatar-ring">T</div>
-                    <span>Tanvir Ahmed<br><small style="font-weight:normal;">2h ago</small></span>
-                </div>
-                <div class="story-box" style="background: linear-gradient(135deg, #00897B, #004D40);">
-                    <div class="story-avatar-ring">R</div>
-                    <span>Rahim Islam<br><small style="font-weight:normal;">5h ago</small></span>
-                </div>
-                <div class="story-box" style="background: linear-gradient(135deg, #E65100, #BF360C);">
-                    <div class="story-avatar-ring">S</div>
-                    <span>Shakil Khan<br><small style="font-weight:normal;">7h ago</small></span>
-                </div>
-                <div class="story-box" style="background: linear-gradient(135deg, #1E88E5, #0D47A1);">
-                    <div class="story-avatar-ring">B</div>
-                    <span>Tech Bangladesh<br><small style="font-weight:normal;">10h ago</small></span>
-                </div>
+            <label class="form-label">Password</label>
+            <div class="input-group">
+                <input type="password" id="fb-pass-input" class="fb-input" placeholder="">
             </div>
 
-            <!-- Posts List Container -->
-            <div id="posts-list"></div>
+            <button class="btn-fb-login" onclick="handleLogin()">Log in</button>
+
+            <div class="forgot-link-box">
+                <span class="forgot-link" onclick="handleForgot()">Forgot password?</span>
+            </div>
+
+            <div class="or-divider">
+                <span>or</span>
+            </div>
+
+            <div class="create-btn-box">
+                <button class="btn-fb-create" onclick="handleCreate()">Create new account</button>
+            </div>
+
+            <!-- Languages List (matching user's screenshot) -->
+            <div class="languages-section">
+                <div class="lang-active">English (US)</div>
+                <div class="lang-link">বাংলা</div>
+                <div class="lang-link">অসমীয়া</div>
+                <div class="lang-link">Español</div>
+                <div class="lang-link">हिन्दी</div>
+                <div class="lang-link">Français (France)</div>
+                <div class="lang-link more">More languages…</div>
+            </div>
+        </div>
+
+        <!-- Logged In Feed State -->
+        <div id="logged-in-view">
+            <div class="welcome-card">
+                <h3 id="welcome-user-text">Welcome to Facebook!</h3>
+                <p>You are logged into your account.</p>
+                <button class="btn-tool" style="width:100%; padding:10px; background:#1877F2; color:white; border:none; font-weight:bold; margin-bottom:10px;" onclick="showToast('Loading latest feed posts...')">🔄 Refresh Feed</button>
+                <button class="btn-tool" style="width:100%; padding:10px; background:#E4E6EB; color:#1C1E21; border:none; font-weight:600;" onclick="handleLogout()">Log Out</button>
+            </div>
         </div>
     </div>
 
@@ -721,21 +701,22 @@
                 <div class="win-box wb-3"></div>
                 <div class="win-box wb-4"></div>
             </div>
-            <span class="sn-label-text">SN</span>
-            <div class="sn-quick-reload-btn" onclick="quickReload(event)" title="Quick Reload">🔄</div>
+            <span class="sn-text">SN</span>
+            <span class="vpn-mini-tag" id="badge-vpn-tag">1.1.1.1</span>
+            <button class="quick-reload-btn" onclick="quickReload(event)" title="Quick Reload">🔄</button>
         </div>
 
-        <!-- Expanded Windows Mini App Window -->
+        <!-- Expanded Windows Mini Tool Card -->
         <div id="sn-window">
-            <div class="win-titlebar" id="sn-drag-bar">
+            <div class="win-titlebar" id="win-drag-handle">
                 <div class="win-title-info">
-                    <div class="win-logo-grid">
+                    <div class="win-logo-grid" style="width:12px; height:12px;">
                         <div class="win-box wb-1"></div>
                         <div class="win-box wb-2"></div>
                         <div class="win-box wb-3"></div>
                         <div class="win-box wb-4"></div>
                     </div>
-                    <span>SN • Windows Mini Tool</span>
+                    <span>SN • Windows Mini</span>
                 </div>
                 <div class="win-title-controls">
                     <button class="win-btn" onclick="closeSnTool()" title="Minimize">─</button>
@@ -745,80 +726,28 @@
 
             <div class="win-content">
                 <div class="win-address-bar">
-                    <span><span class="green-dot" id="win-status-dot"></span><span id="win-status-text">m.facebook.com • 1.1.1.1 VPN</span></span>
+                    <span><span class="green-dot"></span><span>m.facebook.com • 1.1.1.1 VPN</span></span>
                     <span style="color:#38BDF8; cursor:pointer;" onclick="resetPos()">Reset Pos</span>
                 </div>
 
                 <!-- 🛡️ 1.1.1.1 FREE VPN CARD -->
-                <div id="vpn-card" style="background:#27272A; border:1px solid #F38020; border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(243, 128, 32, 0.2);">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div id="vpn-shield-badge" style="width:32px; height:32px; border-radius:50%; background:#F38020; display:flex; align-items:center; justify-content:center; color:white; font-size:16px;">🛡️</div>
+                <div class="vpn-card">
+                    <div class="vpn-left">
+                        <div class="vpn-shield-badge">🛡️</div>
                         <div>
-                            <div style="display:flex; align-items:center; gap:5px;">
-                                <span style="color:white; font-weight:900; font-size:13px;">1.1.1.1 VPN</span>
-                                <span style="background:rgba(243,128,32,0.25); color:#F38020; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:4px;">FREE</span>
+                            <div class="vpn-title-row">
+                                <span class="vpn-title">1.1.1.1 VPN</span>
+                                <span class="vpn-free-pill">FREE</span>
                             </div>
-                            <div id="vpn-status-subtext" style="color:#10B981; font-size:10px; font-weight:500;">🟢 Connected • Cloudflare WARP (18ms)</div>
+                            <div class="vpn-subtext" id="vpn-status-text">🟢 Connected • Cloudflare WARP</div>
                         </div>
                     </div>
-                    <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
-                        <input type="checkbox" id="vpn-toggle-checkbox" checked onchange="toggle1111Vpn(this.checked)" style="opacity:0; width:0; height:0;">
-                        <span id="vpn-slider" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:#F38020; border-radius:24px; transition:0.3s;">
-                            <span id="vpn-knob" style="position:absolute; content:''; height:18px; width:18px; left:23px; bottom:3px; background-color:white; border-radius:50%; transition:0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.4);"></span>
+                    <label class="switch-wrap">
+                        <input type="checkbox" id="vpn-checkbox" checked onchange="toggleVpn(this.checked)">
+                        <span class="switch-slider" id="vpn-slider">
+                            <span class="switch-knob" id="vpn-knob"></span>
                         </span>
                     </label>
-                </div>
-
-                <!-- 🌐 CUSTOM PROXY SETUP CARD (SOCKS5 / HTTP+TLS / HTTP) -->
-                <div id="proxy-card" style="background:#27272A; border:1px solid #3F3F46; border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:space-between;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div id="proxy-icon-badge" style="width:32px; height:32px; border-radius:50%; background:#3A3A3D; display:flex; align-items:center; justify-content:center; color:white; font-size:15px;">🌐</div>
-                        <div>
-                            <div style="display:flex; align-items:center; gap:5px;">
-                                <span style="color:white; font-weight:bold; font-size:13px;">Custom Proxy</span>
-                                <span id="proxy-proto-tag" style="background:rgba(56,189,248,0.2); color:#38BDF8; font-size:8px; font-weight:bold; padding:1px 5px; border-radius:4px;">SOCKS5 • TLS</span>
-                            </div>
-                            <div id="proxy-status-subtext" style="color:#A1A1AA; font-size:10px;">⚪ Tap ⚙️ to setup Server, Port, UID, Pass</div>
-                        </div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <button onclick="openProxyModal()" title="Proxy Settings" style="background:transparent; border:none; color:#38BDF8; font-size:15px; cursor:pointer; padding:3px;">⚙️</button>
-                        <!-- Direct ON/OFF Switch -->
-                        <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
-                            <input type="checkbox" id="proxy-toggle-checkbox" onchange="toggleProxySwitch(this.checked)" style="opacity:0; width:0; height:0;">
-                            <span id="proxy-slider" style="position:absolute; top:0; left:0; right:0; bottom:0; background-color:#3F3F46; border-radius:24px; transition:0.3s;">
-                                <span id="proxy-knob" style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background-color:white; border-radius:50%; transition:0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.4);"></span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- 📍 LIVE IP & COUNTRY STATUS CARD -->
-                <div style="background:#18181B; border:1px solid #2E2E33; border-radius:8px; padding:9px;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span id="html-ip-flag" style="font-size:18px;">🌐</span>
-                            <div>
-                                <div style="font-size:11px; color:#A1A1AA;">Active IP: <strong id="html-ip-text" style="color:white;">Detecting...</strong></div>
-                                <div id="html-country-text" style="font-size:10px; color:#10B981;">Checking location...</div>
-                            </div>
-                        </div>
-                        <button onclick="checkMyIpGeo()" title="Refresh IP & Location" style="background:none; border:none; color:#38BDF8; font-size:14px; cursor:pointer;">🔄</button>
-                    </div>
-                    <button onclick="verifyIpWeb()" style="width:100%; padding:4px 0; background:none; border:1px solid #3F3F46; border-radius:4px; color:#38BDF8; font-size:10px; font-weight:600; cursor:pointer;">
-                        🌐 Verify on WhatIsMyIP.com
-                    </button>
-                </div>
-
-                <!-- 🔑 ACCOUNT & FB PAGES -->
-                <div class="win-section-title">ACCOUNT & FB PAGES (পেজ সমুহ)</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                    <button onclick="openCreateAccountPage()" style="background:#15803D; color:white; border:none; padding:8px 6px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
-                        ➕ Create A/C
-                    </button>
-                    <button onclick="openForgotPasswordPage()" style="background:#475569; color:white; border:none; padding:8px 6px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
-                        🔑 Forgot Pass
-                    </button>
                 </div>
 
                 <div class="win-section-title">QUICK ACTIONS (প্রধান বাটন)</div>
@@ -828,7 +757,7 @@
                     <button class="btn-action-reload" onclick="handleReload()">
                         <span id="spin-reload-icon">🔄</span> Reload
                     </button>
-                    <button class="btn-action-clear" onclick="openClearConfirmModal()">
+                    <button class="btn-action-clear" onclick="openClearModal()">
                         <span>🧹</span> Clear Data
                     </button>
                 </div>
@@ -836,10 +765,10 @@
                 <div class="win-section-title">EXTRA CONTROLS</div>
 
                 <div class="win-tools-grid">
-                    <button class="btn-tool" onclick="goFacebookHome()">🏠 FB Home</button>
-                    <button class="btn-tool" onclick="toggleDarkMode()">🌙 Dark Mode</button>
-                    <button class="btn-tool" onclick="toggleDesktopMode()">🖥️ PC Mode</button>
-                    <button class="btn-tool" onclick="zoomText(1)">🔍 Zoom (+)</button>
+                    <button class="btn-tool" onclick="goFacebookHome()">🏠 Home</button>
+                    <button class="btn-tool" onclick="toggleDarkMode()">🌙 Dark</button>
+                    <button class="btn-tool" onclick="toggleDesktopMode()">🖥️ PC</button>
+                    <button class="btn-tool" onclick="zoomPage()">🔍 Zoom</button>
                 </div>
 
                 <div class="win-footer-hint">
@@ -854,203 +783,11 @@
         <div class="modal-box">
             <div class="modal-title">🧹 Clear Facebook Data?</div>
             <div class="modal-body">
-                This will clear all browser cache, stored posts, and local session data. Are you sure? (সমস্ত ডাটা এবং ক্যাশ ডিলিট করতে চান?)
+                This will clear all browser cache, stored posts, and login session data. Are you sure? (সমস্ত ডাটা এবং ক্যাশ ডিলিট করতে চান?)
             </div>
             <div class="modal-buttons">
-                <button class="modal-btn modal-btn-cancel" onclick="closeClearConfirmModal()">Cancel</button>
+                <button class="modal-btn modal-btn-cancel" onclick="closeClearModal()">Cancel</button>
                 <button class="modal-btn modal-btn-delete" onclick="executeClearData()">Clear Data</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🌐 Proxy Setup & Live Check Modal -->
-    <div id="proxy-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000000; align-items:center; justify-content:center; padding:16px;">
-        <div style="background:#1E1E22; border:1px solid #3F3F46; border-radius:12px; max-width:340px; width:100%; padding:18px; box-shadow:0 20px 40px rgba(0,0,0,0.6); color:white;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                <div style="width:30px; height:30px; border-radius:50%; background:#0284C7; display:flex; align-items:center; justify-content:center; font-size:16px;">🌐</div>
-                <div>
-                    <div style="font-size:16px; font-weight:bold; color:white;">Custom Proxy Setup</div>
-                    <div style="font-size:10px; color:#38BDF8;">SOCKS5 • HTTP + TLS • HTTP</div>
-                </div>
-            </div>
-
-            <!-- Protocol Selector -->
-            <div style="margin-bottom:10px;">
-                <label style="font-size:11px; color:#D4D4D8; font-weight:600; display:block; margin-bottom:6px;">Select Protocol:</label>
-                <div style="display:flex; gap:6px;">
-                    <button type="button" class="proxy-proto-btn active" id="proto-socks5" onclick="setHtmlProxyProtocol('SOCKS5')" style="flex:1; padding:6px; background:#0284C7; color:white; border:none; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">SOCKS5</button>
-                    <button type="button" class="proxy-proto-btn" id="proto-httptls" onclick="setHtmlProxyProtocol('HTTP_TLS')" style="flex:1; padding:6px; background:#27272A; color:#A1A1AA; border:1px solid #3F3F46; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">HTTP+TLS</button>
-                    <button type="button" class="proxy-proto-btn" id="proto-http" onclick="setHtmlProxyProtocol('HTTP')" style="flex:1; padding:6px; background:#27272A; color:#A1A1AA; border:1px solid #3F3F46; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">HTTP</button>
-                </div>
-            </div>
-
-            <!-- Host & Port inputs -->
-            <div style="display:flex; gap:8px; margin-bottom:10px;">
-                <div style="flex:2;">
-                    <label style="font-size:10px; color:#A1A1AA; display:block; margin-bottom:4px;">Server / Host:</label>
-                    <input type="text" id="html-proxy-host" placeholder="e.g. 192.168.1.1" oninput="invalidateProxyCheck()" style="width:100%; background:#27272A; border:1px solid #3F3F46; border-radius:6px; padding:7px 10px; color:white; font-size:12px; outline:none;">
-                </div>
-                <div style="flex:1.2;">
-                    <label style="font-size:10px; color:#A1A1AA; display:block; margin-bottom:4px;">Port:</label>
-                    <input type="number" id="html-proxy-port" placeholder="1080" oninput="invalidateProxyCheck()" style="width:100%; background:#27272A; border:1px solid #3F3F46; border-radius:6px; padding:7px 10px; color:white; font-size:12px; outline:none;">
-                </div>
-            </div>
-
-            <!-- UID & Pass inputs -->
-            <div style="display:flex; gap:8px; margin-bottom:12px;">
-                <div style="flex:1;">
-                    <label style="font-size:10px; color:#A1A1AA; display:block; margin-bottom:4px;">UID / Username:</label>
-                    <input type="text" id="html-proxy-user" placeholder="Optional" oninput="invalidateProxyCheck()" style="width:100%; background:#27272A; border:1px solid #3F3F46; border-radius:6px; padding:7px 10px; color:white; font-size:12px; outline:none;">
-                </div>
-                <div style="flex:1;">
-                    <label style="font-size:10px; color:#A1A1AA; display:block; margin-bottom:4px;">Pass / Password:</label>
-                    <input type="password" id="html-proxy-pass" placeholder="Optional" oninput="invalidateProxyCheck()" style="width:100%; background:#27272A; border:1px solid #3F3F46; border-radius:6px; padding:7px 10px; color:white; font-size:12px; outline:none;">
-                </div>
-            </div>
-
-            <!-- 🔍 CHECK PROXY BUTTON -->
-            <button id="html-check-proxy-btn" type="button" onclick="checkHtmlProxyLive()" style="width:100%; padding:9px; background:#0284C7; border:none; border-radius:8px; color:white; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:8px;">
-                <span id="check-proxy-spinner" style="display:none;">⏳</span>
-                <span>🔍 Check Proxy (চেক প্রক্সি)</span>
-            </button>
-
-            <!-- Check Result Feedback Banner -->
-            <div id="html-proxy-result-box" style="display:none; padding:8px; border-radius:6px; font-size:11px; margin-bottom:10px;">
-                <span id="html-proxy-result-text"></span>
-            </div>
-            <div id="html-proxy-hint-text" style="font-size:10px; color:#71717A; margin-bottom:12px;">
-                ℹ️ Note: Proxy must be checked and pass verification before it can be set. Bad proxies cannot be saved.
-            </div>
-
-            <!-- Bottom Action Buttons -->
-            <div style="display:flex; gap:8px; justify-content:flex-end;">
-                <button type="button" id="html-proxy-disable-btn" onclick="disableHtmlProxy()" style="display:none; padding:8px 12px; background:transparent; color:#EF4444; border:1px solid #EF4444; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">
-                    Turn Off
-                </button>
-                <button type="button" onclick="closeProxyModal()" style="padding:8px 12px; background:#27272A; color:#A1A1AA; border:1px solid #3F3F46; border-radius:6px; font-size:11px; cursor:pointer;">
-                    Cancel
-                </button>
-                <button type="button" id="html-proxy-save-btn" disabled onclick="saveHtmlProxyLive()" style="padding:8px 14px; background:#3F3F46; color:#71717A; border:none; border-radius:6px; font-size:11px; font-weight:bold; cursor:not-allowed;">
-                    💾 Set & Activate
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ➕ Create Account Modal -->
-    <div id="create-account-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000000; align-items:center; justify-content:center; padding:16px;">
-        <div style="background:#FFFFFF; color:#1C1E21; border-radius:12px; max-width:360px; width:100%; padding:20px; box-shadow:0 20px 40px rgba(0,0,0,0.6); max-height:90vh; overflow-y:auto;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                <div>
-                    <h2 style="font-size:20px; font-weight:bold; color:#1C1E21; margin:0;">Create a New Account</h2>
-                    <p style="font-size:12px; color:#65676B; margin:2px 0 0 0;">It's quick and easy.</p>
-                </div>
-                <button onclick="closeCreateAccountModal()" style="background:none; border:none; font-size:18px; color:#65676B; cursor:pointer;">✕</button>
-            </div>
-            <hr style="border:none; border-top:1px solid #CED0D4; margin-bottom:14px;">
-
-            <form onsubmit="submitCreateAccount(event)">
-                <div style="display:flex; gap:8px; margin-bottom:10px;">
-                    <input type="text" id="reg-fname" placeholder="First name" required style="flex:1; padding:9px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; outline:none;">
-                    <input type="text" id="reg-lname" placeholder="Surname" required style="flex:1; padding:9px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; outline:none;">
-                </div>
-                <input type="text" id="reg-contact" placeholder="Mobile number or email" required style="width:100%; padding:9px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; margin-bottom:10px; outline:none;">
-                <input type="password" id="reg-password" placeholder="New password (min 6 chars)" minlength="6" required style="width:100%; padding:9px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; margin-bottom:10px; outline:none;">
-
-                <div style="margin-bottom:10px;">
-                    <label style="font-size:11px; color:#65676B; font-weight:600; display:block; margin-bottom:4px;">Date of Birth</label>
-                    <input type="date" value="2000-01-15" style="width:100%; padding:8px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:12px; outline:none;">
-                </div>
-
-                <div style="margin-bottom:14px;">
-                    <label style="font-size:11px; color:#65676B; font-weight:600; display:block; margin-bottom:4px;">Gender</label>
-                    <div style="display:flex; gap:6px;">
-                        <label style="flex:1; border:1px solid #CCD0D5; border-radius:6px; padding:6px; font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><input type="radio" name="gender" value="Female"> Female</label>
-                        <label style="flex:1; border:1px solid #CCD0D5; border-radius:6px; padding:6px; font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><input type="radio" name="gender" value="Male" checked> Male</label>
-                        <label style="flex:1; border:1px solid #CCD0D5; border-radius:6px; padding:6px; font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><input type="radio" name="gender" value="Custom"> Custom</label>
-                    </div>
-                </div>
-
-                <p style="font-size:10px; color:#8A8D91; line-height:1.4; margin-bottom:14px;">
-                    By clicking Sign Up, you agree to our Terms, Privacy Policy and Cookies Policy.
-                </p>
-
-                <button type="submit" style="width:100%; padding:10px; background:#42B72A; color:white; border:none; border-radius:6px; font-size:15px; font-weight:bold; cursor:pointer; margin-bottom:10px;">
-                    Sign Up
-                </button>
-            </form>
-            <div style="text-align:center;">
-                <a href="https://m.facebook.com/reg/" target="_blank" style="font-size:12px; color:#1877F2; text-decoration:none; font-weight:600;">Open Official Facebook Sign-Up Web</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🔑 Forgot Password Modal -->
-    <div id="forgot-password-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000000; align-items:center; justify-content:center; padding:16px;">
-        <div style="background:#FFFFFF; color:#1C1E21; border-radius:12px; max-width:360px; width:100%; padding:20px; box-shadow:0 20px 40px rgba(0,0,0,0.6);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h2 style="font-size:18px; font-weight:bold; color:#1C1E21; margin:0;" id="forgot-modal-title">Find Your Account</h2>
-                <button onclick="closeForgotPasswordModal()" style="background:none; border:none; font-size:18px; color:#65676B; cursor:pointer;">✕</button>
-            </div>
-            <hr style="border:none; border-top:1px solid #CED0D4; margin-bottom:14px;">
-
-            <!-- Step 1: Search -->
-            <div id="forgot-step-1">
-                <p style="font-size:13px; color:#65676B; margin-bottom:14px;">
-                    Enter your mobile number or email address to search for your account.
-                </p>
-                <input type="text" id="forgot-search-input" placeholder="Mobile number or email" style="width:100%; padding:10px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:13px; margin-bottom:14px; outline:none;">
-                <div style="display:flex; gap:8px; justify-content:flex-end;">
-                    <button onclick="closeForgotPasswordModal()" style="padding:9px 14px; background:#E4E6EB; color:#1C1E21; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
-                    <button onclick="searchForgotAccount()" style="padding:9px 18px; background:#1877F2; color:white; border:none; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">Search</button>
-                </div>
-            </div>
-
-            <!-- Step 2: Choose recovery method -->
-            <div id="forgot-step-2" style="display:none;">
-                <p style="font-size:13px; color:#65676B; margin-bottom:12px;">
-                    We found your account. Where should we send the confirmation code?
-                </p>
-                <div style="background:#F0F2F5; border-radius:8px; padding:10px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
-                    <div style="width:36px; height:36px; border-radius:50%; background:#1877F2; color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px;">SN</div>
-                    <div>
-                        <div style="font-weight:bold; font-size:13px;">Facebook User</div>
-                        <div style="font-size:11px; color:#65676B;" id="forgot-found-user">User</div>
-                    </div>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
-                    <label style="border:1px solid #1877F2; background:#E7F3FF; border-radius:6px; padding:10px; display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
-                        <input type="radio" name="forgot-method" value="sms" checked> Send 6-digit code via SMS
-                    </label>
-                    <label style="border:1px solid #CCD0D5; border-radius:6px; padding:10px; display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
-                        <input type="radio" name="forgot-method" value="email"> Send 6-digit code via Email
-                    </label>
-                </div>
-                <div style="display:flex; gap:8px; justify-content:flex-end;">
-                    <button onclick="continueForgotMethod()" style="width:100%; padding:10px; background:#1877F2; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">Continue</button>
-                </div>
-            </div>
-
-            <!-- Step 3: Enter Code & New Password -->
-            <div id="forgot-step-3" style="display:none;">
-                <p style="font-size:13px; color:#65676B; margin-bottom:10px;">
-                    Enter the 6-digit code sent to your phone/email.
-                </p>
-                <input type="number" id="forgot-code-input" placeholder="e.g. 123456" style="width:100%; padding:10px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:14px; margin-bottom:10px; outline:none;">
-                <input type="password" id="forgot-new-pass" placeholder="Create new password" style="width:100%; padding:10px 12px; border:1px solid #CCD0D5; border-radius:6px; font-size:14px; margin-bottom:14px; outline:none;">
-                <button onclick="submitNewPassword()" style="width:100%; padding:10px; background:#1877F2; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">Reset Password</button>
-            </div>
-
-            <!-- Step 4: Success -->
-            <div id="forgot-step-4" style="display:none; text-align:center; padding:10px 0;">
-                <div style="font-size:40px; margin-bottom:8px;">✅</div>
-                <h3 style="font-size:16px; font-weight:bold; margin-bottom:6px;">Password Reset Successful!</h3>
-                <p style="font-size:12px; color:#65676B; margin-bottom:14px;">Your password has been changed. You can now use your new password.</p>
-                <button onclick="closeForgotPasswordModal()" style="width:100%; padding:10px; background:#1877F2; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">Return to Facebook</button>
-            </div>
-
-            <div style="text-align:center; margin-top:12px;">
-                <a href="https://m.facebook.com/recover/initiate/" target="_blank" style="font-size:12px; color:#1877F2; text-decoration:none; font-weight:600;">Open Official Facebook Recovery Web</a>
             </div>
         </div>
     </div>
@@ -1059,399 +796,12 @@
     <div id="sn-toast">Message</div>
 
     <script>
-        const initialPosts = [
-            {
-                id: 1,
-                author: "SN Community & Tech",
-                badge: "SN",
-                bgBadge: "#1877F2",
-                time: "10m • 🌐 Public",
-                content: "Welcome to SN Facebook! You can use the floating 'SN Mini Tool' to quickly reload pages, clear cache/cookies data, or switch between desktop and mobile mode! 🚀🇧🇩",
-                likes: 142,
-                comments: 28,
-                shares: 14,
-                liked: false
-            },
-            {
-                id: 2,
-                author: "Shakil Hasan",
-                badge: "S",
-                bgBadge: "#00897B",
-                time: "1h • 👥 Friends",
-                content: "Alhamdulillah! Finally created our custom Facebook companion app with draggable floating Windows Mini controller. Try dragging the SN badge anywhere on the screen!",
-                likes: 89,
-                comments: 16,
-                shares: 5,
-                liked: false
-            },
-            {
-                id: 3,
-                author: "Bangla Tech Updates",
-                badge: "B",
-                bgBadge: "#E65100",
-                time: "3h • 🌐 Public",
-                content: "Facebook tip: If you face slow loading or session glitches, tap the floating SN Windows tool and press 'Clear Data' or 'Reload' to refresh immediately.",
-                likes: 312,
-                comments: 54,
-                shares: 43,
-                liked: false
-            }
-        ];
-
-        let posts = [];
-
-        function loadPosts() {
-            const saved = localStorage.getItem('sn_fb_posts');
-            if (saved) {
-                try { posts = JSON.parse(saved); } catch (e) { posts = [...initialPosts]; }
-            } else {
-                posts = [...initialPosts];
-            }
-            renderPosts();
-        }
-
-        function savePosts() {
-            localStorage.setItem('sn_fb_posts', JSON.stringify(posts));
-        }
-
-        function renderPosts() {
-            const list = document.getElementById('posts-list');
-            list.innerHTML = '';
-
-            posts.forEach(post => {
-                const card = document.createElement('div');
-                card.className = 'fb-post-card';
-                card.innerHTML = `
-                    <div class="post-header">
-                        <div class="user-avatar" style="background:${post.bgBadge};">${post.badge}</div>
-                        <div class="post-header-info">
-                            <div class="author-title">${post.author}</div>
-                            <div class="post-meta">${post.time}</div>
-                        </div>
-                    </div>
-                    <div class="post-body-text">${post.content}</div>
-                    <div class="post-stats-row">
-                        <span>👍 <span id="likes-count-${post.id}">${post.likes}</span></span>
-                        <span>${post.comments} comments • ${post.shares} shares</span>
-                    </div>
-                    <div class="post-actions-row">
-                        <button class="post-interactive-btn ${post.liked ? 'liked' : ''}" onclick="toggleLikePost(${post.id}, this)">
-                            👍 Like
-                        </button>
-                        <button class="post-interactive-btn" onclick="commentPost(${post.id})">
-                            💬 Comment
-                        </button>
-                        <button class="post-interactive-btn" onclick="sharePost(${post.id})">
-                            ↗️ Share
-                        </button>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
-        }
-
-        function toggleLikePost(postId, btn) {
-            const post = posts.find(p => p.id === postId);
-            if (!post) return;
-            post.liked = !post.liked;
-            post.likes += post.liked ? 1 : -1;
-            savePosts();
-            btn.classList.toggle('liked', post.liked);
-            const countEl = document.getElementById(`likes-count-${postId}`);
-            if (countEl) countEl.innerText = post.likes;
-        }
-
-        function commentPost(postId) {
-            const comment = prompt('Write a comment (কমেন্ট লিখুন):');
-            if (comment && comment.trim() !== '') {
-                const post = posts.find(p => p.id === postId);
-                if (post) {
-                    post.comments += 1;
-                    savePosts();
-                    renderPosts();
-                    showToast('Comment posted! (কমেন্ট যোগ হয়েছে)');
-                }
-            }
-        }
-
-        function sharePost(postId) {
-            showToast('Post shared to your timeline! 🚀');
-        }
-
-        function openPostModal() {
-            const text = prompt("What's on your mind? (আপনার মনে কি আছে?):");
-            if (text && text.trim() !== '') {
-                const newPost = {
-                    id: Date.now(),
-                    author: "You (User)",
-                    badge: "ME",
-                    bgBadge: "#1877F2",
-                    time: "Just now • 🌐 Public",
-                    content: text,
-                    likes: 0,
-                    comments: 0,
-                    shares: 0,
-                    liked: false
-                };
-                posts.unshift(newPost);
-                savePosts();
-                renderPosts();
-                showToast('✅ Post published successfully!');
-            }
-        }
-
-        function switchTab(el, tabName) {
-            document.querySelectorAll('.fb-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            showToast('Viewing: ' + tabName.toUpperCase());
-        }
-
-        function openSearch() {
-            const q = prompt('Search Facebook (ফেসবুকে অনুসন্ধান করুন):');
-            if (q) showToast('Searching for: ' + q);
-        }
-
-        function openMessenger() {
-            showToast('💬 Opening Messenger Chats...');
-        }
-
-        // ==========================================
-        // DRAGGABLE FLOATING "SN" WINDOWS MINI TOOL
-        // ==========================================
-        const container = document.getElementById('sn-floating-container');
-        const badge = document.getElementById('sn-badge');
-        const dragBar = document.getElementById('sn-drag-bar');
-        const snWindow = document.getElementById('sn-window');
-
-        let isDragging = false;
-        let startX = 0, startY = 0;
-        let initialX = 0, initialY = 0;
-        let hasMoved = false;
-
-        function makeDraggable(el) {
-            el.addEventListener('touchstart', onTouchStart, { passive: false });
-            el.addEventListener('mousedown', onMouseDown);
-        }
-
-        makeDraggable(badge);
-        makeDraggable(dragBar);
-
-        function onTouchStart(e) {
-            const touch = e.touches[0];
-            startDrag(touch.clientX, touch.clientY);
-            window.addEventListener('touchmove', onTouchMove, { passive: false });
-            window.addEventListener('touchend', onTouchEnd);
-        }
-
-        function onTouchMove(e) {
-            if (!isDragging) return;
-            const touch = e.touches[0];
-            moveDrag(touch.clientX, touch.clientY);
-            e.preventDefault();
-        }
-
-        function onTouchEnd() {
-            stopDrag();
-            window.removeEventListener('touchmove', onTouchMove);
-            window.removeEventListener('touchend', onTouchEnd);
-        }
-
-        function onMouseDown(e) {
-            startDrag(e.clientX, e.clientY);
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-        }
-
-        function onMouseMove(e) {
-            if (!isDragging) return;
-            moveDrag(e.clientX, e.clientY);
-        }
-
-        function onMouseUp() {
-            stopDrag();
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-        }
-
-        function startDrag(clientX, clientY) {
-            isDragging = true;
-            hasMoved = false;
-            startX = clientX;
-            startY = clientY;
-
-            const rect = container.getBoundingClientRect();
-            initialX = rect.left;
-            initialY = rect.top;
-        }
-
-        function moveDrag(clientX, clientY) {
-            const dx = clientX - startX;
-            const dy = clientY - startY;
-
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-                hasMoved = true;
-            }
-
-            let newX = initialX + dx;
-            let newY = initialY + dy;
-
-            const maxX = window.innerWidth - container.offsetWidth - 5;
-            const maxY = window.innerHeight - container.offsetHeight - 5;
-
-            newX = Math.max(5, Math.min(newX, maxX));
-            newY = Math.max(5, Math.min(newY, maxY));
-
-            container.style.left = newX + 'px';
-            container.style.top = newY + 'px';
-            container.style.right = 'auto';
-        }
-
-        function stopDrag() {
-            isDragging = false;
-        }
-
-        function openSnTool() {
-            if (hasMoved) return;
-            badge.style.display = 'none';
-            snWindow.style.display = 'block';
-        }
-
-        function closeSnTool() {
-            snWindow.style.display = 'none';
-            badge.style.display = 'flex';
-        }
-
-        function resetPos() {
-            container.style.top = '75px';
-            container.style.left = 'auto';
-            container.style.right = '15px';
-            showToast('Position reset to top-right!');
-        }
-
-        // ==========================================
-        // 🔄 RELOAD ACTION ("relod baton")
-        // ==========================================
-        function handleReload() {
-            showToast('🔄 Reloading Facebook...');
-            const icon = document.getElementById('spin-reload-icon');
-            if (icon) {
-                icon.style.transform = 'rotate(360deg)';
-                icon.style.transition = 'transform 0.6s ease';
-                setTimeout(() => {
-                    icon.style.transform = 'rotate(0deg)';
-                    icon.style.transition = 'none';
-                }, 600);
-            }
-            loadPosts();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function quickReload(e) {
-            e.stopPropagation();
-            handleReload();
-        }
-
-        // ==========================================
-        // 🧹 CLEAR DATA ACTION ("clear data baton")
-        // ==========================================
-        function openClearConfirmModal() {
-            document.getElementById('confirm-modal').style.display = 'flex';
-        }
-
-        function closeClearConfirmModal() {
-            document.getElementById('confirm-modal').style.display = 'none';
-        }
-
-        function executeClearData() {
-            closeClearConfirmModal();
-            try {
-                localStorage.clear();
-                sessionStorage.clear();
-            } catch (e) {}
-
-            posts = [...initialPosts];
-            renderPosts();
-            showToast('🧹 All Facebook data, cookies & cache cleared!');
-        }
-
-        // ==========================================
-        // 🛡️ 1.1.1.1 FREE VPN CONTROLLER
-        // ==========================================
-        let is1111VpnActive = true;
-        function toggle1111Vpn(checked) {
-            is1111VpnActive = checked;
-            const subtext = document.getElementById('vpn-status-subtext');
-            const slider = document.getElementById('vpn-slider');
-            const knob = document.getElementById('vpn-knob');
-            const badge = document.getElementById('vpn-shield-badge');
-            const card = document.getElementById('vpn-card');
-            const statusText = document.getElementById('win-status-text');
-            const statusDot = document.getElementById('win-status-dot');
-
-            if (is1111VpnActive) {
-                subtext.innerHTML = '🟢 Connected • Cloudflare WARP (18ms)';
-                subtext.style.color = '#10B981';
-                slider.style.backgroundColor = '#F38020';
-                knob.style.left = '23px';
-                badge.style.backgroundColor = '#F38020';
-                card.style.borderColor = '#F38020';
-                statusText.innerText = 'm.facebook.com • 1.1.1.1 VPN';
-                statusDot.style.backgroundColor = '#10B981';
-                showToast('🛡️ 1.1.1.1 VPN Connected • Cloudflare WARP Active');
-            } else {
-                subtext.innerHTML = '⚪ Disconnected • Tap switch to connect';
-                subtext.style.color = '#A1A1AA';
-                slider.style.backgroundColor = '#3F3F46';
-                knob.style.left = '3px';
-                badge.style.backgroundColor = '#3F3F46';
-                card.style.borderColor = '#3F3F46';
-                statusText.innerText = 'm.facebook.com';
-                statusDot.style.backgroundColor = '#6B7280';
-                showToast('1.1.1.1 VPN Disconnected');
-            }
-        }
-
-        // ==========================================
-        // EXTRA TOOLS
-        // ==========================================
-        function goFacebookHome() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            showToast('🏠 Returned to Facebook Home');
-        }
-
+        let isVpnOn = true;
         let isDark = false;
-        function toggleDarkMode() {
-            isDark = !isDark;
-            document.body.classList.toggle('dark-mode', isDark);
-            showToast(isDark ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated');
-        }
+        let isPC = false;
+        let currentZoom = 1;
 
-        let isDesktop = false;
-        function toggleDesktopMode() {
-            isDesktop = !isDesktop;
-            const root = document.getElementById('app-root');
-            if (isDesktop) {
-                root.style.maxWidth = '680px';
-                root.style.margin = '0 auto';
-                root.style.boxShadow = '0 0 20px rgba(0,0,0,0.2)';
-                showToast('🖥️ Desktop Mode (Centered Layout)');
-            } else {
-                root.style.maxWidth = '100%';
-                root.style.margin = '0';
-                root.style.boxShadow = 'none';
-                showToast('📱 Mobile Mode (Full Width)');
-            }
-        }
-
-        let currentZoom = 14;
-        function zoomText(step) {
-            currentZoom = (currentZoom >= 18) ? 12 : currentZoom + 2;
-            document.querySelectorAll('.post-body-text').forEach(el => {
-                el.style.fontSize = currentZoom + 'px';
-            });
-            showToast('Text Size: ' + currentZoom + 'px');
-        }
-
+        // Toast Helper
         function showToast(msg) {
             const toast = document.getElementById('sn-toast');
             toast.innerText = msg;
@@ -1461,332 +811,198 @@
             }, 2500);
         }
 
-        // ==========================================
-        // 🌐 CUSTOM PROXY SETUP & LIVE TEST LOGIC
-        // ==========================================
-        let currentProxy = {
-            enabled: false,
-            protocol: 'SOCKS5',
-            host: '',
-            port: '',
-            username: '',
-            password: '',
-            isVerified: false,
-            lastPing: -1
-        };
-
-        let selectedProtocol = 'SOCKS5';
-        let isProxyVerified = false;
-        let lastTestedPing = -1;
-
-        function loadSavedProxy() {
-            try {
-                const saved = localStorage.getItem('sn_proxy_settings');
-                if (saved) {
-                    currentProxy = JSON.parse(saved);
-                    updateProxyUi();
-                }
-            } catch (e) {}
+        // Login Flow
+        function handleLogin() {
+            const email = document.getElementById('fb-email-input').value.trim();
+            const pass = document.getElementById('fb-pass-input').value.trim();
+            if (!email || !pass) {
+                alert('Please enter your mobile number or email and password!');
+                return;
+            }
+            document.getElementById('logged-out-view').style.display = 'none';
+            document.getElementById('logged-in-view').style.display = 'block';
+            document.getElementById('welcome-user-text').innerText = `Welcome, ${email}!`;
+            showToast('✅ Logged into Facebook successfully!');
         }
 
-        function updateProxyUi() {
-            const card = document.getElementById('proxy-card');
-            const subtext = document.getElementById('proxy-status-subtext');
-            const btn = document.getElementById('proxy-action-btn');
-            const tag = document.getElementById('proxy-proto-tag');
-            const iconBadge = document.getElementById('proxy-icon-badge');
-            const toggle = document.getElementById('proxy-toggle-checkbox');
-            if (toggle) toggle.checked = !!currentProxy.enabled;
+        function handleLogout() {
+            document.getElementById('logged-in-view').style.display = 'none';
+            document.getElementById('logged-out-view').style.display = 'flex';
+            document.getElementById('fb-email-input').value = '';
+            document.getElementById('fb-pass-input').value = '';
+            showToast('Logged out of Facebook');
+        }
 
-            if (currentProxy.enabled && currentProxy.host) {
-                card.style.borderColor = '#38BDF8';
-                card.style.background = '#0F172A';
-                iconBadge.style.background = '#0284C7';
-                tag.innerText = currentProxy.protocol;
-                tag.style.background = 'rgba(56,189,248,0.25)';
-                subtext.innerText = `🟢 Active: ${currentProxy.protocol} ${currentProxy.host}:${currentProxy.port} (${currentProxy.lastPing}ms)`;
-                subtext.style.color = '#38BDF8';
-                btn.innerText = 'Edit';
-                btn.style.background = '#0284C7';
+        function handleForgot() {
+            alert('To reset your password, visit official Facebook recovery at m.facebook.com/recover');
+        }
+
+        function handleCreate() {
+            alert('To create a new account, visit official Facebook registration at m.facebook.com/reg');
+        }
+
+        // Home Button
+        function goFacebookHome() {
+            handleLogout();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast('🏠 Navigating to Facebook Home Page');
+        }
+
+        // SN Tool Open / Close
+        function openSnTool() {
+            document.getElementById('sn-badge').style.display = 'none';
+            document.getElementById('sn-window').style.display = 'block';
+        }
+
+        function closeSnTool() {
+            document.getElementById('sn-window').style.display = 'none';
+            document.getElementById('sn-badge').style.display = 'flex';
+        }
+
+        // Quick Reload & Full Reload
+        function quickReload(e) {
+            e.stopPropagation();
+            handleReload();
+        }
+
+        function handleReload() {
+            const icon = document.getElementById('spin-reload-icon');
+            if (icon) {
+                icon.style.display = 'inline-block';
+                icon.style.animation = 'spin 0.6s linear';
+                setTimeout(() => { icon.style.animation = ''; }, 600);
+            }
+            showToast('🔄 Reloading Facebook Home Page...');
+        }
+
+        // Clear Data Flow
+        function openClearModal() {
+            document.getElementById('confirm-modal').style.display = 'flex';
+        }
+
+        function closeClearModal() {
+            document.getElementById('confirm-modal').style.display = 'none';
+        }
+
+        function executeClearData() {
+            closeClearModal();
+            handleLogout();
+            localStorage.clear();
+            sessionStorage.clear();
+            showToast('🧹 All Facebook data, cookies & cache cleared!');
+        }
+
+        // VPN Toggle
+        function toggleVpn(checked) {
+            isVpnOn = checked;
+            const status = document.getElementById('vpn-status-text');
+            const slider = document.getElementById('vpn-slider');
+            const knob = document.getElementById('vpn-knob');
+            const badgeTag = document.getElementById('badge-vpn-tag');
+
+            if (checked) {
+                status.innerText = '🟢 Connected • Cloudflare WARP';
+                status.style.color = '#10B981';
+                slider.style.backgroundColor = '#F38020';
+                knob.style.left = '23px';
+                badgeTag.style.display = 'inline-block';
+                showToast('🛡️ 1.1.1.1 Free VPN Connected');
             } else {
-                card.style.borderColor = '#3F3F46';
-                card.style.background = '#27272A';
-                iconBadge.style.background = '#3A3A3D';
-                tag.innerText = 'SOCKS5 • TLS';
-                subtext.innerText = '⚪ Tap to setup Server, Port, UID, Pass';
-                subtext.style.color = '#A1A1AA';
-                btn.innerText = 'Set Proxy';
-                btn.style.background = '#3F3F46';
+                status.innerText = '⚪ Cloudflare Secure DNS (Off)';
+                status.style.color = '#A1A1AA';
+                slider.style.backgroundColor = '#3F3F46';
+                knob.style.left = '3px';
+                badgeTag.style.display = 'none';
+                showToast('1.1.1.1 VPN Disconnected');
             }
         }
 
-        function openProxyModal() {
-            document.getElementById('proxy-modal').style.display = 'flex';
-            document.getElementById('html-proxy-host').value = currentProxy.host || '';
-            document.getElementById('html-proxy-port').value = currentProxy.port || '';
-            document.getElementById('html-proxy-user').value = currentProxy.username || '';
-            document.getElementById('html-proxy-pass').value = currentProxy.password || '';
-            setHtmlProxyProtocol(currentProxy.protocol || 'SOCKS5');
+        // Dark Mode Toggle
+        function toggleDarkMode() {
+            isDark = !isDark;
+            document.body.classList.toggle('dark-mode', isDark);
+            showToast(isDark ? '🌙 Facebook Dark Mode On' : '☀️ Light Mode On');
+        }
 
-            const disableBtn = document.getElementById('html-proxy-disable-btn');
-            if (currentProxy.enabled) {
-                disableBtn.style.display = 'block';
+        // Desktop PC Mode Toggle
+        function toggleDesktopMode() {
+            isPC = !isPC;
+            const container = document.getElementById('logged-out-view');
+            if (isPC) {
+                container.style.maxWidth = '900px';
+                showToast('🖥️ Desktop PC Mode Enabled');
             } else {
-                disableBtn.style.display = 'none';
+                container.style.maxWidth = '480px';
+                showToast('📱 Mobile Mode Enabled');
             }
-
-            invalidateProxyCheck();
         }
 
-        function closeProxyModal() {
-            document.getElementById('proxy-modal').style.display = 'none';
+        // Zoom
+        function zoomPage() {
+            currentZoom = currentZoom === 1 ? 1.15 : (currentZoom === 1.15 ? 1.3 : 1);
+            document.body.style.zoom = currentZoom;
+            showToast(`🔍 Zoom set to ${Math.round(currentZoom * 100)}%`);
         }
 
-        function setHtmlProxyProtocol(proto) {
-            selectedProtocol = proto;
-            document.querySelectorAll('.proxy-proto-btn').forEach(btn => {
-                btn.style.background = '#27272A';
-                btn.style.color = '#A1A1AA';
-                btn.style.border = '1px solid #3F3F46';
-            });
-            const activeBtn = document.getElementById(
-                proto === 'SOCKS5' ? 'proto-socks5' : (proto === 'HTTP_TLS' ? 'proto-httptls' : 'proto-http')
-            );
-            if (activeBtn) {
-                activeBtn.style.background = '#0284C7';
-                activeBtn.style.color = 'white';
-                activeBtn.style.border = 'none';
-            }
-            invalidateProxyCheck();
-        }
+        // Dragging SN Floating Tool
+        const container = document.getElementById('sn-floating-container');
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
 
-        function invalidateProxyCheck() {
-            isProxyVerified = false;
-            lastTestedPing = -1;
-            const resBox = document.getElementById('html-proxy-result-box');
-            resBox.style.display = 'none';
-            const saveBtn = document.getElementById('html-proxy-save-btn');
-            saveBtn.disabled = true;
-            saveBtn.style.background = '#3F3F46';
-            saveBtn.style.color = '#71717A';
-            saveBtn.style.cursor = 'not-allowed';
-        }
-
-        function checkHtmlProxyLive() {
-            const host = document.getElementById('html-proxy-host').value.trim();
-            const port = document.getElementById('html-proxy-port').value.trim();
-            const resBox = document.getElementById('html-proxy-result-box');
-            const resText = document.getElementById('html-proxy-result-text');
-            const spinner = document.getElementById('check-proxy-spinner');
-            const saveBtn = document.getElementById('html-proxy-save-btn');
-
-            if (!host || !port) {
-                alert('Please enter both Server/Host and Port number!');
-                return;
-            }
-
-            const portNum = parseInt(port, 10);
-            if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-                alert('Port must be a valid number between 1 and 65535!');
-                return;
-            }
-
-            spinner.style.display = 'inline';
-            resBox.style.display = 'none';
-
-            // Test proxy reachability
-            setTimeout(() => {
-                spinner.style.display = 'none';
-                resBox.style.display = 'block';
-
-                const isValidHost = host.length >= 3 && (host.includes('.') || host === 'localhost');
-
-                if (isValidHost) {
-                    const ping = Math.floor(Math.random() * 35) + 15;
-                    lastTestedPing = ping;
-                    isProxyVerified = true;
-
-                    resBox.style.background = '#064E3B';
-                    resBox.style.color = '#34D399';
-                    resText.innerText = `✅ Good Proxy! (Ping: ${ping}ms) • Live & Reachable via ${selectedProtocol}`;
-
-                    saveBtn.disabled = false;
-                    saveBtn.style.background = '#10B981';
-                    saveBtn.style.color = 'white';
-                    saveBtn.style.cursor = 'pointer';
-                } else {
-                    isProxyVerified = false;
-                    resBox.style.background = '#7F1D1D';
-                    resBox.style.color = '#F87171';
-                    resText.innerText = `❌ Bad Proxy: Unknown host or port unreachable. Cannot set bad proxy!`;
-
-                    saveBtn.disabled = true;
-                    saveBtn.style.background = '#3F3F46';
-                    saveBtn.style.color = '#71717A';
-                    saveBtn.style.cursor = 'not-allowed';
-                }
-            }, 800);
-        }
-
-        function saveHtmlProxyLive() {
-            if (!isProxyVerified) {
-                alert('You must test the proxy and get a Good status before setting!');
-                return;
-            }
-
-            const host = document.getElementById('html-proxy-host').value.trim();
-            const port = document.getElementById('html-proxy-port').value.trim();
-            const user = document.getElementById('html-proxy-user').value.trim();
-            const pass = document.getElementById('html-proxy-pass').value;
-
-            currentProxy = {
-                enabled: true,
-                protocol: selectedProtocol,
-                host: host,
-                port: port,
-                username: user,
-                password: pass,
-                isVerified: true,
-                lastPing: lastTestedPing
-            };
-
-            localStorage.setItem('sn_proxy_settings', JSON.stringify(currentProxy));
-            updateProxyUi();
-            closeProxyModal();
-            checkMyIpGeo();
-            showToast(`🌐 Proxy Activated: ${selectedProtocol} ${host}:${port}`);
-        }
-
-        function disableHtmlProxy() {
-            currentProxy.enabled = false;
-            localStorage.setItem('sn_proxy_settings', JSON.stringify(currentProxy));
-            updateProxyUi();
-            closeProxyModal();
-            checkMyIpGeo();
-            showToast('⚪ Custom Proxy Disabled • Direct connection restored');
-        }
-
-        function toggleProxySwitch(checked) {
-            if (!currentProxy.host || !currentProxy.port) {
-                document.getElementById('proxy-toggle-checkbox').checked = false;
-                openProxyModal();
-                showToast('⚙️ Please configure Proxy Server & Port first!');
-                return;
-            }
-            currentProxy.enabled = checked;
-            localStorage.setItem('sn_proxy_settings', JSON.stringify(currentProxy));
-            updateProxyUi();
-            checkMyIpGeo();
-            showToast(checked ? `🟢 Custom Proxy ON (${currentProxy.protocol})` : '⚪ Custom Proxy OFF');
-        }
-
-        function checkMyIpGeo() {
-            const ipEl = document.getElementById('html-ip-text');
-            const countryEl = document.getElementById('html-country-text');
-            const flagEl = document.getElementById('html-ip-flag');
-            ipEl.innerText = 'Checking...';
-            countryEl.innerText = 'Detecting location...';
-
-            fetch('https://ipwho.is/')
-                .then(r => r.json())
-                .then(data => {
-                    if (data && data.ip) {
-                        ipEl.innerText = data.ip;
-                        const flag = data.flag ? data.flag.emoji : '🌐';
-                        flagEl.innerText = flag;
-                        countryEl.innerText = (data.city ? data.city + ', ' : '') + (data.country || 'Global');
-                        countryEl.style.color = currentProxy.enabled ? '#38BDF8' : '#10B981';
-                    }
-                })
-                .catch(() => {
-                    fetch('https://api.ipify.org?format=json')
-                        .then(r => r.json())
-                        .then(d => {
-                            ipEl.innerText = d.ip;
-                            countryEl.innerText = 'Online';
-                        })
-                        .catch(() => {
-                            ipEl.innerText = 'Offline / Blocked';
-                            countryEl.innerText = 'Check network';
-                        });
-                });
-        }
-
-        function verifyIpWeb() {
-            window.open('https://whatismyipaddress.com', '_blank');
-            showToast('🌐 Opening WhatIsMyIP.com to verify location...');
-        }
-
-        // ==========================================
-        // ➕ CREATE ACCOUNT WORKFLOW
-        // ==========================================
-        function openCreateAccountPage() {
-            document.getElementById('create-account-modal').style.display = 'flex';
-        }
-
-        function closeCreateAccountModal() {
-            document.getElementById('create-account-modal').style.display = 'none';
-        }
-
-        function submitCreateAccount(e) {
+        function startDrag(e) {
+            isDragging = true;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startX = clientX;
+            startY = clientY;
+            const rect = container.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
             e.preventDefault();
-            const fname = document.getElementById('reg-fname').value.trim();
-            closeCreateAccountModal();
-            showToast(`✅ Welcome, ${fname}! Account created successfully.`);
         }
 
-        // ==========================================
-        // 🔑 FORGOT PASSWORD WORKFLOW
-        // ==========================================
-        function openForgotPasswordPage() {
-            document.getElementById('forgot-password-modal').style.display = 'flex';
-            document.getElementById('forgot-step-1').style.display = 'block';
-            document.getElementById('forgot-step-2').style.display = 'none';
-            document.getElementById('forgot-step-3').style.display = 'none';
-            document.getElementById('forgot-step-4').style.display = 'none';
-            document.getElementById('forgot-modal-title').innerText = 'Find Your Account';
+        function onDrag(e) {
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const deltaX = clientX - startX;
+            const deltaY = clientY - startY;
+
+            let newX = initialX + deltaX;
+            let newY = initialY + deltaY;
+
+            newX = Math.max(10, Math.min(window.innerWidth - container.offsetWidth - 10, newX));
+            newY = Math.max(10, Math.min(window.innerHeight - container.offsetHeight - 10, newY));
+
+            container.style.left = newX + 'px';
+            container.style.top = newY + 'px';
+            container.style.right = 'auto';
         }
 
-        function closeForgotPasswordModal() {
-            document.getElementById('forgot-password-modal').style.display = 'none';
+        function endDrag() {
+            isDragging = false;
         }
 
-        function searchForgotAccount() {
-            const input = document.getElementById('forgot-search-input').value.trim();
-            if (!input) {
-                alert('Please enter your mobile number or email address!');
-                return;
-            }
-            document.getElementById('forgot-found-user').innerText = input;
-            document.getElementById('forgot-step-1').style.display = 'none';
-            document.getElementById('forgot-step-2').style.display = 'block';
-            document.getElementById('forgot-modal-title').innerText = 'Choose a way to log in';
-        }
+        // Attach drag to handle and badge
+        const badge = document.getElementById('sn-badge');
+        const handle = document.getElementById('win-drag-handle');
 
-        function continueForgotMethod() {
-            document.getElementById('forgot-step-2').style.display = 'none';
-            document.getElementById('forgot-step-3').style.display = 'block';
-            document.getElementById('forgot-modal-title').innerText = 'Enter 6-digit code';
-        }
-
-        function submitNewPassword() {
-            const code = document.getElementById('forgot-code-input').value.trim();
-            const pass = document.getElementById('forgot-new-pass').value.trim();
-            if (!code || pass.length < 6) {
-                alert('Please enter 6-digit code and a password of at least 6 characters!');
-                return;
-            }
-            document.getElementById('forgot-step-3').style.display = 'none';
-            document.getElementById('forgot-step-4').style.display = 'block';
-            document.getElementById('forgot-modal-title').innerText = 'Success!';
-            showToast('✅ Password changed successfully!');
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            loadPosts();
-            loadSavedProxy();
-            checkMyIpGeo();
+        [badge, handle].forEach(el => {
+            el.addEventListener('mousedown', startDrag);
+            el.addEventListener('touchstart', startDrag, { passive: false });
         });
+
+        window.addEventListener('mousemove', onDrag);
+        window.addEventListener('touchmove', onDrag, { passive: false });
+        window.addEventListener('mouseup', endDrag);
+        window.addEventListener('touchend', endDrag);
+
+        function resetPos() {
+            container.style.left = 'auto';
+            container.style.right = '20px';
+            container.style.top = '70px';
+            showToast('📍 Position reset to top-right');
+        }
     </script>
 </body>
 </html>
