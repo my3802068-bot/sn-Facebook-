@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.ValueCallback
@@ -24,6 +25,7 @@ import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import org.json.JSONObject
+import kotlin.math.hypot
 
 const val FACEBOOK_LOGIN_URL = "https://m.facebook.com/"
 const val FACEBOOK_DESKTOP_URL = "https://www.facebook.com/"
@@ -31,12 +33,52 @@ const val DESKTOP_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
 class SyncWebView(context: Context) : WebView(context) {
-    var onUserTouchEvent: ((MotionEvent) -> Unit)? = null
+    var onDragTouchEvent: ((MotionEvent) -> Unit)? = null
+    var onUserInteractStart: (() -> Unit)? = null
     var isReplayingTouch: Boolean = false
+
+    private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
+    private var pendingDownEvent: MotionEvent? = null
+    private var downX = 0f
+    private var downY = 0f
+    private var isDraggingGesture = false
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (!isReplayingTouch) {
-            onUserTouchEvent?.invoke(ev)
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    onUserInteractStart?.invoke()
+                    pendingDownEvent?.recycle()
+                    pendingDownEvent = MotionEvent.obtain(ev)
+                    downX = ev.x
+                    downY = ev.y
+                    isDraggingGesture = false
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!isDraggingGesture) {
+                        val dist = hypot(ev.x - downX, ev.y - downY)
+                        if (dist > touchSlop) {
+                            isDraggingGesture = true
+                            pendingDownEvent?.let { down ->
+                                onDragTouchEvent?.invoke(down)
+                                down.recycle()
+                            }
+                            pendingDownEvent = null
+                            onDragTouchEvent?.invoke(ev)
+                        }
+                    } else {
+                        onDragTouchEvent?.invoke(ev)
+                    }
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (isDraggingGesture) {
+                        onDragTouchEvent?.invoke(ev)
+                    }
+                    pendingDownEvent?.recycle()
+                    pendingDownEvent = null
+                    isDraggingGesture = false
+                }
+            }
         }
         return super.dispatchTouchEvent(ev)
     }
@@ -46,6 +88,12 @@ class SyncWebView(context: Context) : WebView(context) {
             return false
         }
         return super.requestFocus(direction, previouslyFocusedRect)
+    }
+
+    override fun onDetachedFromWindow() {
+        pendingDownEvent?.recycle()
+        pendingDownEvent = null
+        super.onDetachedFromWindow()
     }
 }
 
@@ -67,6 +115,7 @@ class MultiAccountManager(
     private val webViews = mutableMapOf<Int, SyncWebView>()
     private val defaultUserAgents = mutableMapOf<Int, String>()
     private val compactFlags = mutableMapOf<Int, Boolean>()
+    private var lastUserInteractionMs = 0L
 
     var accountCount by mutableIntStateOf(1)
         private set
@@ -175,11 +224,18 @@ class MultiAccountManager(
         defaultUserAgents[paneIndex] = webView.settings.userAgentString
         applyViewSettings(webView, paneIndex, isCompactWidth, isDesktopMode)
 
-        webView.onUserTouchEvent = { ev ->
-            if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
-                lastActivePane = paneIndex
-            }
-            mirrorTouchEvent(paneIndex, ev)
+        // Native app feel: hide browser scrollbars & suppress browser long-press text selection menus
+        webView.isVerticalScrollBarEnabled = false
+        webView.isHorizontalScrollBarEnabled = false
+        webView.isHapticFeedbackEnabled = true
+
+        webView.onUserInteractStart = {
+            lastActivePane = paneIndex
+            lastUserInteractionMs = System.currentTimeMillis()
+        }
+
+        webView.onDragTouchEvent = { ev ->
+            mirrorDragTouchEvent(paneIndex, ev)
         }
 
         webView.addJavascriptInterface(
@@ -203,9 +259,9 @@ class MultiAccountManager(
             databaseEnabled = true
             allowFileAccess = true
             allowContentAccess = true
-            builtInZoomControls = true
+            builtInZoomControls = desktopMode
             displayZoomControls = false
-            setSupportZoom(true)
+            setSupportZoom(desktopMode)
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             cacheMode = WebSettings.LOAD_DEFAULT
 
@@ -243,11 +299,70 @@ class MultiAccountManager(
         paneErrors.remove(paneIndex)
     }
 
-    fun injectSyncScript(webView: WebView) {
+    fun injectAppAndSyncScripts(webView: WebView) {
+        webView.evaluateJavascript(APP_SHELL_JS, null)
         webView.evaluateJavascript(SYNC_LISTENER_JS, null)
     }
 
-    private fun mirrorTouchEvent(sourcePane: Int, ev: MotionEvent) {
+    fun onPaneNavigated(sourcePane: Int, url: String?) {
+        if (!isMultiSyncEnabled || accountCount <= 1) return
+        if (sourcePane != lastActivePane) return
+        if (System.currentTimeMillis() - lastUserInteractionMs > 4000L) return
+        val targetPath = extractSyncableFacebookPath(url) ?: return
+
+        // After a brief settle delay, verify other panes also reached this route if they missed a SPA/navigation
+        mainHandler.postDelayed({
+            if (!isMultiSyncEnabled || accountCount <= 1) return@postDelayed
+            if (sourcePane != lastActivePane) return@postDelayed
+            for (idx in 0 until accountCount) {
+                if (idx == sourcePane) continue
+                val other = webViews[idx] ?: continue
+                val otherPath = extractSyncableFacebookPath(other.url)
+                if (otherPath != null && otherPath != targetPath && !isAuthOrCheckpointPath(otherPath)) {
+                    val base = if (isDesktopMode) "https://www.facebook.com" else "https://m.facebook.com"
+                    other.loadUrl(base + targetPath)
+                }
+            }
+        }, 650L)
+    }
+
+    private fun extractSyncableFacebookPath(rawUrl: String?): String? {
+        if (rawUrl.isNullOrBlank()) return null
+        return try {
+            val uri = Uri.parse(rawUrl)
+            val host = uri.host?.lowercase() ?: return null
+            if (!host.endsWith("facebook.com")) return null
+            val path = uri.path ?: "/"
+            if (isAuthOrCheckpointPath(path)) return null
+            val safeSectionPrefixes = listOf(
+                "/friends", "/notifications", "/watch", "/groups",
+                "/marketplace", "/bookmarks", "/menu", "/search", "/home.php", "/feeds"
+            )
+            if (path == "/" || safeSectionPrefixes.any { path.startsWith(it) }) {
+                val query = uri.query
+                if (path.startsWith("/search") && !query.isNullOrBlank()) {
+                    "$path?$query"
+                } else {
+                    path
+                }
+            } else {
+                null
+            }
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun isAuthOrCheckpointPath(path: String): Boolean {
+        val lower = path.lowercase()
+        return lower.startsWith("/login") ||
+            lower.startsWith("/checkpoint") ||
+            lower.startsWith("/two_step") ||
+            lower.startsWith("/reg") ||
+            lower.startsWith("/recover")
+    }
+
+    private fun mirrorDragTouchEvent(sourcePane: Int, ev: MotionEvent) {
         if (!isMultiSyncEnabled || accountCount <= 1) return
         val sourceView = webViews[sourcePane] ?: return
         val srcW = sourceView.width
@@ -280,6 +395,7 @@ class MultiAccountManager(
     private fun handleCapturedJsEvent(sourcePane: Int, payloadJson: String) {
         mainHandler.post {
             lastActivePane = sourcePane
+            lastUserInteractionMs = System.currentTimeMillis()
             if (!isMultiSyncEnabled || accountCount <= 1) return@post
 
             val quoted = JSONObject.quote(payloadJson)
@@ -398,8 +514,26 @@ class MultiAccountManager(
     }
 
     companion object {
-        // Native MotionEvent handles taps, drags, scrolls, and button clicks directly across panes.
-        // JS listener handles text typing, select/checkbox changes, and Enter key submissions.
+        // Makes Facebook WebView look & behave like a native mobile Facebook app instead of a web browser
+        private val APP_SHELL_JS = """
+            (function() {
+                if (window.__nushaAppStyled) return;
+                window.__nushaAppStyled = true;
+
+                var style = document.createElement('style');
+                style.id = 'nusha-app-shell-style';
+                style.textContent = [
+                    'html, body { overscroll-behavior-y: contain !important; -webkit-tap-highlight-color: transparent !important; }',
+                    '::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }',
+                    '*:not(input):not(textarea):not([contenteditable="true"]) { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }',
+                    '[data-sigil*="m-app-banner"], #m_install_app_banner, [data-testid="app_banner"], a[href*="fb://"], a[href*="market://"] { display: none !important; }'
+                ].join('\n');
+                (document.head || document.documentElement).appendChild(style);
+            })();
+        """.trimIndent()
+
+        // Semantic DOM click + text input + Enter + SPA navigation sync
+        // (Native MotionEvent handles drags/scrolls while semantic DOM matching handles taps accurately even if button Y-positions differ!)
         private val SYNC_LISTENER_JS = """
             (function() {
                 if (window.__nushaHooked) return;
@@ -430,15 +564,37 @@ class MultiAccountManager(
                     return path.join(' > ');
                 }
 
+                function getHrefPath(el) {
+                    try {
+                        var href = el.getAttribute('href');
+                        if (!href || href.startsWith('#') || href.startsWith('javascript:')) return '';
+                        var u = new URL(href, location.origin);
+                        return u.pathname;
+                    } catch (e) {
+                        return '';
+                    }
+                }
+
+                function normalizeLabel(str) {
+                    return (str || '').replace(/[0-9]+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 60);
+                }
+
                 function buildDescriptor(el) {
                     if (!el || el.nodeType !== 1) return {};
+                    var rect = el.getBoundingClientRect();
                     var tag = el.tagName.toLowerCase();
                     var role = el.getAttribute('role') || '';
                     var ariaLabel = el.getAttribute('aria-label') || '';
-                    var testId = el.getAttribute('data-testid') || '';
+                    if (!ariaLabel) {
+                        var labeledChild = el.querySelector('[aria-label]');
+                        if (labeledChild) ariaLabel = labeledChild.getAttribute('aria-label') || '';
+                    }
+                    var testId = el.getAttribute('data-testid') || el.getAttribute('data-sigil') || '';
                     var name = el.getAttribute('name') || '';
                     var placeholder = el.getAttribute('placeholder') || '';
                     var type = el.getAttribute('type') || '';
+                    var hrefPath = getHrefPath(el);
+                    var text = (el.innerText || el.value || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60);
                     var inputs = Array.from(document.querySelectorAll(tag));
                     var fieldIndex = inputs.indexOf(el);
                     return {
@@ -446,47 +602,92 @@ class MultiAccountManager(
                         tag: tag,
                         role: role,
                         ariaLabel: ariaLabel,
+                        normAria: normalizeLabel(ariaLabel),
                         testId: testId,
                         name: name,
                         placeholder: placeholder,
                         inputType: type,
+                        hrefPath: hrefPath,
+                        text: text,
+                        normText: normalizeLabel(text),
                         selector: getCssPath(el),
-                        fieldIndex: fieldIndex
+                        fieldIndex: fieldIndex,
+                        xRatio: window.innerWidth > 0 ? (rect.left + rect.width / 2) / window.innerWidth : 0.5,
+                        yRatio: window.innerHeight > 0 ? (rect.top + rect.height / 2) / window.innerHeight : 0.5
                     };
+                }
+
+                function isVisible(el) {
+                    if (!el) return false;
+                    var r = el.getBoundingClientRect();
+                    return r.width > 0 && r.height > 0;
                 }
 
                 function findElement(d) {
                     if (!d) return null;
                     if (d.id) {
                         var byId = document.getElementById(d.id);
-                        if (byId) return byId;
+                        if (byId && isVisible(byId)) return byId;
                     }
                     if (d.name) {
                         var byName = document.querySelector(d.tag + '[name="' + CSS.escape(d.name) + '"]');
-                        if (byName) return byName;
+                        if (byName && isVisible(byName)) return byName;
                     }
                     if (d.testId) {
-                        var byTestId = document.querySelector('[data-testid="' + CSS.escape(d.testId) + '"]');
-                        if (byTestId) return byTestId;
+                        var byTestId = document.querySelector('[data-testid="' + CSS.escape(d.testId) + '"]')
+                            || document.querySelector('[data-sigil="' + CSS.escape(d.testId) + '"]');
+                        if (byTestId && isVisible(byTestId)) return byTestId;
                     }
                     if (d.ariaLabel) {
-                        var byAria = document.querySelector(d.tag + '[aria-label="' + CSS.escape(d.ariaLabel) + '"]')
+                        var exactAria = document.querySelector(d.tag + '[aria-label="' + CSS.escape(d.ariaLabel) + '"]')
                             || document.querySelector('[aria-label="' + CSS.escape(d.ariaLabel) + '"]');
-                        if (byAria) return byAria;
+                        if (exactAria && isVisible(exactAria)) return exactAria;
+                    }
+                    if (d.normAria) {
+                        var allAria = document.querySelectorAll('[aria-label]');
+                        for (var a = 0; a < allAria.length; a++) {
+                            if (isVisible(allAria[a]) && normalizeLabel(allAria[a].getAttribute('aria-label')) === d.normAria) {
+                                return allAria[a];
+                            }
+                        }
                     }
                     if (d.placeholder) {
                         var byPh = document.querySelector(d.tag + '[placeholder="' + CSS.escape(d.placeholder) + '"]');
-                        if (byPh) return byPh;
+                        if (byPh && isVisible(byPh)) return byPh;
+                    }
+                    if (d.hrefPath) {
+                        var links = document.querySelectorAll('a[href]');
+                        for (var i = 0; i < links.length; i++) {
+                            if (isVisible(links[i]) && getHrefPath(links[i]) === d.hrefPath) return links[i];
+                        }
+                    }
+                    if (d.text) {
+                        var candidates = document.querySelectorAll('button, a, [role="button"], [role="link"], [role="tab"], [role="menuitem"], input[type="submit"], input[type="button"], div[tabindex="0"]');
+                        for (var j = 0; j < candidates.length; j++) {
+                            if (!isVisible(candidates[j])) continue;
+                            var cText = (candidates[j].innerText || candidates[j].value || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+                            if (cText === d.text) return candidates[j];
+                        }
+                        if (d.normText) {
+                            for (var k = 0; k < candidates.length; k++) {
+                                if (!isVisible(candidates[k])) continue;
+                                var nText = normalizeLabel(candidates[k].innerText || candidates[k].value || '');
+                                if (nText === d.normText) return candidates[k];
+                            }
+                        }
                     }
                     if (d.selector) {
                         try {
                             var bySel = document.querySelector(d.selector);
-                            if (bySel) return bySel;
+                            if (bySel && isVisible(bySel)) return bySel;
                         } catch (e) {}
                     }
                     if (typeof d.fieldIndex === 'number' && d.fieldIndex >= 0 && (d.tag === 'input' || d.tag === 'textarea' || d.tag === 'select')) {
                         var list = document.querySelectorAll(d.tag);
                         if (list[d.fieldIndex]) return list[d.fieldIndex];
+                    }
+                    if (typeof d.xRatio === 'number' && typeof d.yRatio === 'number') {
+                        return document.elementFromPoint(d.xRatio * window.innerWidth, d.yRatio * window.innerHeight);
                     }
                     return null;
                 }
@@ -503,6 +704,24 @@ class MultiAccountManager(
                     }
                 }
 
+                // 1. Capture Taps / Clicks semantically
+                document.addEventListener('click', function(e) {
+                    if (window.__nushaReplaying) return;
+                    if (!e.isTrusted) return;
+                    var target = e.target && e.target.closest
+                        ? (e.target.closest('button, a, input, select, textarea, label, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [role="switch"], [role="checkbox"], [data-sigil], [tabindex]') || e.target)
+                        : e.target;
+                    if (!target) return;
+                    var desc = buildDescriptor(target);
+                    desc.type = 'click';
+                    if (window.innerWidth > 0 && window.innerHeight > 0 && e.clientX && e.clientY) {
+                        desc.xRatio = e.clientX / window.innerWidth;
+                        desc.yRatio = e.clientY / window.innerHeight;
+                    }
+                    NushaBridge.onAction(JSON.stringify(desc));
+                }, true);
+
+                // 2. Capture Text Inputs & Changes
                 function emitInput(e) {
                     if (window.__nushaReplaying) return;
                     var target = e.target;
@@ -520,6 +739,7 @@ class MultiAccountManager(
                 document.addEventListener('input', emitInput, true);
                 document.addEventListener('change', emitInput, true);
 
+                // 3. Capture Enter Key
                 document.addEventListener('keydown', function(e) {
                     if (window.__nushaReplaying) return;
                     if (e.key === 'Enter' && e.target) {
@@ -529,11 +749,27 @@ class MultiAccountManager(
                     }
                 }, true);
 
+                // Replay Handler
                 window.__nushaReplay = function(jsonStr) {
                     try {
                         var data = JSON.parse(jsonStr);
                         window.__nushaReplaying = true;
-                        if (data.type === 'input') {
+                        if (data.type === 'click') {
+                            var el = findElement(data);
+                            if (el) {
+                                if (el.scrollIntoView) {
+                                    try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {}
+                                }
+                                var tag = el.tagName ? el.tagName.toLowerCase() : '';
+                                if (tag !== 'input' && tag !== 'textarea' && tag !== 'select' && !el.isContentEditable) {
+                                    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+                                    el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+                                    el.click();
+                                } else {
+                                    if (el.click) el.click();
+                                }
+                            }
+                        } else if (data.type === 'input') {
                             var inp = findElement(data);
                             if (inp) {
                                 if (data.isContentEditable) {

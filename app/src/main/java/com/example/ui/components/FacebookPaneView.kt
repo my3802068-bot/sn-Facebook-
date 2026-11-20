@@ -211,6 +211,34 @@ fun FacebookPaneView(
                             }
 
                             webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView?,
+                                    request: WebResourceRequest?
+                                ): Boolean {
+                                    val urlStr = request?.url?.toString() ?: return false
+                                    if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
+                                        return false
+                                    }
+                                    if (urlStr.startsWith("intent://")) {
+                                        try {
+                                            val intent = android.content.Intent.parseUri(
+                                                urlStr,
+                                                android.content.Intent.URI_INTENT_SCHEME
+                                            )
+                                            val fallback = intent.getStringExtra("browser_fallback_url")
+                                            if (!fallback.isNullOrBlank() &&
+                                                (fallback.startsWith("http://") || fallback.startsWith("https://"))
+                                            ) {
+                                                view?.loadUrl(fallback)
+                                            }
+                                        } catch (_: Throwable) {
+                                        }
+                                        return true
+                                    }
+                                    // Keep fb://, market://, etc. inside the app without ERR_UNKNOWN_URL_SCHEME
+                                    return true
+                                }
+
                                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                                     super.onPageStarted(view, url, favicon)
                                     manager.paneErrors[paneIndex] = null
@@ -221,7 +249,22 @@ fun FacebookPaneView(
                                     super.onPageFinished(view, url)
                                     manager.paneLoadingProgress[paneIndex] = 100
                                     if (view != null) {
-                                        manager.injectSyncScript(view)
+                                        manager.injectAppAndSyncScripts(view)
+                                    }
+                                    manager.onPaneNavigated(paneIndex, url)
+                                }
+
+                                override fun doUpdateVisitedHistory(
+                                    view: WebView?,
+                                    url: String?,
+                                    isReload: Boolean
+                                ) {
+                                    super.doUpdateVisitedHistory(view, url, isReload)
+                                    if (view != null) {
+                                        manager.injectAppAndSyncScripts(view)
+                                    }
+                                    if (!isReload) {
+                                        manager.onPaneNavigated(paneIndex, url)
                                     }
                                 }
 
