@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "SN Facebook"
+rootProject.name = "Nusha Lite 2"
 
 include(":app")

@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="66dp"
-        android:height="66dp"
-        android:drawable="@drawable/ic_launcher_fg"
-        android:gravity="center" />
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Facebook Blue Circle inside 66dp safe zone -->
+    <path
+        android:fillColor="#1877F2"
+        android:pathData="M54,26 A28,28 0 1,0 54,82 A28,28 0 1,0 54,26 Z" />
+    <!-- Bold Facebook 'f' emblem -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50.2,81.7 L50.2,58.5 L44.2,58.5 L44.2,51.5 L50.2,51.5 L50.2,46.0 C50.2,39.2 54.3,35.4 60.5,35.4 C63.4,35.4 65.8,35.9 65.8,35.9 L65.8,42.0 L62.5,42.0 C59.2,42.0 58.2,44.0 58.2,46.1 L58.2,51.5 L65.2,51.5 L64.1,58.5 L58.2,58.5 L58.2,81.7 Z" />
+</vector>

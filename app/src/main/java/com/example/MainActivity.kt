@@ -1,17 +1,10 @@
 package com.example
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Bundle
 import android.webkit.ValueCallback
-import android.webkit.WebChromeClient
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -19,18 +12,24 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,33 +37,42 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.example.ui.components.FacebookOfflineFeed
-import com.example.ui.components.FacebookWebView
-import com.example.ui.components.FacebookWebViewController
-import com.example.ui.components.SnMiniWindowOverlay
+import androidx.compose.ui.unit.dp
+import com.example.ui.components.FacebookPaneView
+import com.example.ui.components.MultiAccountManager
+import com.example.ui.components.NushaTopBar
 import com.example.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ensureWebViewCacheDirs()
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
-                FacebookAppScreen()
+            MyApplicationTheme(darkTheme = true) {
+                NushaLiteApp()
             }
+        }
+    }
+
+    private fun ensureWebViewCacheDirs() {
+        try {
+            val baseCache = java.io.File(cacheDir, "WebView/Default/HTTP Cache/Code Cache")
+            java.io.File(baseCache, "js").mkdirs()
+            java.io.File(baseCache, "wasm").mkdirs()
+        } catch (_: Throwable) {
         }
     }
 }
 
 @Composable
-fun FacebookAppScreen() {
+fun NushaLiteApp() {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // File chooser callback storage for Facebook uploads
+    // File chooser for photo/file uploads inside Facebook WebViews
     var fileUploadCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     val fileChooserLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -86,9 +94,8 @@ fun FacebookAppScreen() {
         fileUploadCallback = null
     }
 
-    // Facebook WebView Controller
-    val webViewController = remember {
-        FacebookWebViewController(context) { callback, params ->
+    val manager = remember {
+        MultiAccountManager(context) { callback, params ->
             fileUploadCallback?.onReceiveValue(null)
             fileUploadCallback = callback
             try {
@@ -98,160 +105,214 @@ fun FacebookAppScreen() {
                 }
                 fileChooserLauncher.launch(intent)
                 true
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 fileUploadCallback = null
                 false
             }
         }
     }
 
-    // App State
-    var isSnExpanded by remember { mutableStateOf(false) }
-    var isDesktopMode by remember { mutableStateOf(false) }
-    var isDarkMode by remember { mutableStateOf(false) }
-    var isOfflineMode by remember { mutableStateOf(false) }
-    var isVpnConnected by remember { mutableStateOf(true) } // Free 1.1.1.1 VPN
-
-    // Connectivity monitoring
-    DisposableEffect(context) {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                // Network restored
+    // Preserve active WebViews across 1 / 2 / 3 / 4 layout changes
+    val paneContents = remember(manager) {
+        List(4) { index ->
+            movableContentOf<Int, Boolean> { totalPanes, compactWidth ->
+                FacebookPaneView(
+                    paneIndex = index,
+                    totalPanes = totalPanes,
+                    isCompactWidth = compactWidth,
+                    isMultiSyncEnabled = manager.isMultiSyncEnabled,
+                    isLastActive = manager.lastActivePane == index,
+                    manager = manager,
+                    onPaneTouched = { touchedIdx ->
+                        manager.lastActivePane = touchedIdx
+                    }
+                )
             }
-
-            override fun onLost(network: Network) {
-                // Network lost
-            }
-        }
-
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-        connectivityManager.registerNetworkCallback(request, networkCallback)
-
-        onDispose {
-            connectivityManager.unregisterNetworkCallback(networkCallback)
         }
     }
 
-    // Handle back button:
-    // 1. If SN Mini Window is open, minimize it
-    // 2. If WebView can go back, navigate back
-    // 3. Otherwise exit
-    BackHandler(enabled = isSnExpanded || webViewController.canGoBack()) {
-        when {
-            isSnExpanded -> isSnExpanded = false
-            webViewController.canGoBack() -> webViewController.goBack()
-        }
+    BackHandler(enabled = manager.canAnyGoBack()) {
+        manager.handleSystemBack()
     }
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF0A0B0D))
             .statusBarsPadding()
-            .navigationBarsPadding(),
+            .navigationBarsPadding()
+            .imePadding(),
+        contentWindowInsets = WindowInsets(0.dp),
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Black
+        containerColor = Color(0xFF0A0B0D)
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF18191A))
+                .padding(innerPadding)
         ) {
-            // Main Content: Facebook WebView or Offline fallback
-            if (isOfflineMode) {
-                FacebookOfflineFeed(
-                    onRetryConnection = {
-                        isOfflineMode = false
-                        webViewController.reload()
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Connecting to Facebook...")
+            NushaTopBar(
+                accountCount = manager.accountCount,
+                isMultiSyncEnabled = manager.isMultiSyncEnabled,
+                onSelectAccountCount = { count ->
+                    manager.updateAccountCount(count)
+                    coroutineScope.launch {
+                        val msg = if (count == 1) {
+                            "Single Facebook page active"
+                        } else {
+                            "$count Facebook Login pages opened • Multi Sync ON"
                         }
+                        snackbarHostState.showSnackbar(msg)
                     }
-                )
-            } else {
-                FacebookWebView(
-                    controller = webViewController,
-                    isDesktopMode = isDesktopMode,
-                    isDarkMode = isDarkMode,
-                    onPageStarted = {
-                        // Loading started
-                    },
-                    onPageFinished = {
-                        // Loading finished
-                    },
-                    onErrorReceived = { error ->
-                        isOfflineMode = true
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Unable to load live Facebook. Showing preview.")
+                },
+                onSetMultiSync = { enabled ->
+                    manager.setMultiSync(enabled)
+                    coroutineScope.launch {
+                        val msg = if (enabled) {
+                            "Multi Sync ON: Actions in 1 page mirror to all"
+                        } else {
+                            "Manual Mode (OFF): Tap each page individually"
                         }
-                    }
-                )
-            }
-
-            // Draggable "SN" Windows Mini Floating Tool
-            SnMiniWindowOverlay(
-                isExpanded = isSnExpanded,
-                onToggleExpanded = { isSnExpanded = it },
-                onReload = {
-                    if (isOfflineMode) {
-                        isOfflineMode = false
-                    }
-                    webViewController.reload()
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("🔄 Reloading Facebook...")
+                        snackbarHostState.showSnackbar(msg)
                     }
                 },
-                onClearData = {
-                    webViewController.clearAllData {
+                onReloadAll = {
+                    manager.reloadAll()
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Reloading Facebook...")
+                    }
+                },
+                onClearAllData = {
+                    manager.clearAllData {
                         coroutineScope.launch {
-                            snackbarHostState.showSnackbar("🧹 All Facebook data, cookies & cache cleared!")
+                            snackbarHostState.showSnackbar("All Facebook data & cookies cleared!")
                         }
-                    }
-                },
-                onGoHome = {
-                    isOfflineMode = false
-                    webViewController.goHome()
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("🏠 Navigating to Facebook Home")
-                    }
-                },
-                isDesktopMode = isDesktopMode,
-                onToggleDesktopMode = {
-                    isDesktopMode = !isDesktopMode
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            if (isDesktopMode) "🖥️ Desktop PC Mode Enabled" else "📱 Mobile Mode Enabled"
-                        )
-                    }
-                },
-                isDarkMode = isDarkMode,
-                onToggleDarkMode = {
-                    isDarkMode = !isDarkMode
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            if (isDarkMode) "🌙 Facebook Dark Mode On" else "☀️ Facebook Light Mode On"
-                        )
-                    }
-                },
-                onZoomIn = {
-                    webViewController.zoomIn()
-                },
-                onZoomOut = {
-                    webViewController.zoomOut()
-                },
-                isVpnConnected = isVpnConnected,
-                onToggleVpn = {
-                    isVpnConnected = !isVpnConnected
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            if (isVpnConnected) "🛡️ 1.1.1.1 Free VPN Connected • Cloudflare WARP Active"
-                            else "1.1.1.1 VPN Disconnected"
-                        )
                     }
                 }
             )
+
+            // Multi-Account Home Page Grid (1 to 4 Facebook panes)
+            val count = manager.accountCount
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .background(Color(0xFF0A0B0D))
+                    .then(if (count > 1) Modifier.padding(4.dp) else Modifier)
+            ) {
+                when (count) {
+                    1 -> {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            paneContents[0](1, false)
+                        }
+                    }
+                    2 -> {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                paneContents[0](2, false)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                paneContents[1](2, false)
+                            }
+                        }
+                    }
+                    3 -> {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    paneContents[0](3, true)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    paneContents[1](3, true)
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                paneContents[2](3, false)
+                            }
+                        }
+                    }
+                    else -> {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    paneContents[0](4, true)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    paneContents[1](4, true)
+                                }
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    paneContents[2](4, true)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    paneContents[3](4, true)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

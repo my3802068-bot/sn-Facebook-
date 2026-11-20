@@ -1,23 +1,12 @@
 <resources>
-    <string name="app_name">SN Facebook</string>
-    <string name="sn_tool_title">SN Mini Tool</string>
-    <string name="sn_reload">Reload</string>
-    <string name="sn_clear_data">Clear Data</string>
-    <string name="sn_home">Facebook Home</string>
-    <string name="sn_desktop_mode">Desktop Mode</string>
-    <string name="sn_mobile_mode">Mobile Mode</string>
-    <string name="sn_dark_mode">Dark Mode</string>
-    <string name="sn_light_mode">Light Mode</string>
-    <string name="sn_minimize">Minimize</string>
-    <string name="sn_expand">Expand</string>
-    <string name="sn_data_cleared">Browser data and cache cleared successfully!</string>
-    <string name="sn_reloading">Reloading Facebook…</string>
-    <string name="sn_drag_hint">Drag anywhere to move</string>
-    <string name="sn_vpn_title">1.1.1.1 Free VPN</string>
-    <string name="sn_vpn_cloudflare">Cloudflare WARP DNS</string>
-    <string name="sn_vpn_connected">VPN Connected • Protected</string>
-    <string name="sn_vpn_disconnected">VPN Disconnected</string>
-    <string name="offline_title">You\'re Offline</string>
-    <string name="offline_desc">Unable to connect to Facebook. Check your internet connection or use preview mode.</string>
-    <string name="retry">Retry</string>
+    <string name="app_name">Nusha Lite 2</string>
+    <string name="menu_options">More options</string>
+    <string name="multiple_account">Multiple Account</string>
+    <string name="multi_sync_label">Multiple Sync</string>
+    <string name="sync_on">ON</string>
+    <string name="sync_off">OFF</string>
+    <string name="reload_page">Reload</string>
+    <string name="clear_data">Clear Data</string>
+    <string name="reloading_toast">Reloading Facebook…</string>
+    <string name="data_cleared_toast">All Facebook data &amp; cookies cleared!</string>
 </resources>

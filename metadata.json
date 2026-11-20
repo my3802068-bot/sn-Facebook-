@@ -1,6 +1,6 @@
 {
-  "name": "SN Facebook",
-  "description": "Facebook companion app with draggable SN Windows mini floating tool featuring reload, cache clear, and quick web controls.",
+  "name": "Nusha Lite 2",
+  "description": "Multi-account Facebook browser (1-4 panes) with toggleable synchronized multi-action mirroring, reload, and clear data controls.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
