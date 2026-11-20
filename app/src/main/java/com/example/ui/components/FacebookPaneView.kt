@@ -186,7 +186,7 @@ fun FacebookPaneView(
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 AndroidView(
                     factory = { ctx ->
-                        WebView(ctx).apply {
+                        SyncWebView(ctx).apply {
                             layoutParams = ViewGroup.LayoutParams(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -194,13 +194,6 @@ fun FacebookPaneView(
                             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
 
                             manager.configureWebView(this, paneIndex, isCompactWidth)
-
-                            setOnTouchListener { _, event ->
-                                if (event.action == MotionEvent.ACTION_DOWN) {
-                                    onPaneTouched(paneIndex)
-                                }
-                                false
-                            }
 
                             webChromeClient = object : WebChromeClient() {
                                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
@@ -245,7 +238,7 @@ fun FacebookPaneView(
                                 }
                             }
 
-                            loadUrl(FACEBOOK_LOGIN_URL)
+                            loadUrl(manager.getInitialUrl())
                         }
                     },
                     modifier = Modifier

@@ -2,9 +2,12 @@ package com.example.ui.components
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Matrix
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.view.MotionEvent
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.ValueCallback
@@ -23,6 +26,28 @@ import androidx.webkit.WebViewFeature
 import org.json.JSONObject
 
 const val FACEBOOK_LOGIN_URL = "https://m.facebook.com/"
+const val FACEBOOK_DESKTOP_URL = "https://www.facebook.com/"
+const val DESKTOP_USER_AGENT =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+class SyncWebView(context: Context) : WebView(context) {
+    var onUserTouchEvent: ((MotionEvent) -> Unit)? = null
+    var isReplayingTouch: Boolean = false
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (!isReplayingTouch) {
+            onUserTouchEvent?.invoke(ev)
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    override fun requestFocus(direction: Int, previouslyFocusedRect: Rect?): Boolean {
+        if (isReplayingTouch) {
+            return false
+        }
+        return super.requestFocus(direction, previouslyFocusedRect)
+    }
+}
 
 class NushaSyncBridge(
     private val paneIndex: Int,
@@ -39,7 +64,9 @@ class MultiAccountManager(
     val onFileChooserRequested: (ValueCallback<Array<Uri>>?, WebChromeClient.FileChooserParams?) -> Boolean
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val webViews = mutableMapOf<Int, WebView>()
+    private val webViews = mutableMapOf<Int, SyncWebView>()
+    private val defaultUserAgents = mutableMapOf<Int, String>()
+    private val compactFlags = mutableMapOf<Int, Boolean>()
 
     var accountCount by mutableIntStateOf(1)
         private set
@@ -47,33 +74,32 @@ class MultiAccountManager(
     var isMultiSyncEnabled by mutableStateOf(false)
         private set
 
+    var isDesktopMode by mutableStateOf(false)
+        private set
+
     var lastActivePane by mutableIntStateOf(0)
 
     val paneLoadingProgress = mutableStateMapOf<Int, Int>()
     val paneErrors = mutableStateMapOf<Int, String?>()
+
+    fun getInitialUrl(): String = if (isDesktopMode) FACEBOOK_DESKTOP_URL else FACEBOOK_LOGIN_URL
 
     fun updateAccountCount(newCount: Int) {
         val clamped = newCount.coerceIn(1, 4)
         val previous = accountCount
         accountCount = clamped
         if (clamped > 1 && previous == 1) {
-            // Auto-enable multi-sync when switching from 1 to multi (2-4)
             isMultiSyncEnabled = true
         } else if (clamped == 1) {
             isMultiSyncEnabled = false
         }
-        // Clean up WebViews above newCount
         val keysToRemove = webViews.keys.filter { it >= clamped }
         keysToRemove.forEach { idx ->
             webViews.remove(idx)?.destroy()
+            defaultUserAgents.remove(idx)
+            compactFlags.remove(idx)
             paneLoadingProgress.remove(idx)
             paneErrors.remove(idx)
-        }
-    }
-
-    fun toggleMultiSync() {
-        if (accountCount > 1) {
-            isMultiSyncEnabled = !isMultiSyncEnabled
         }
     }
 
@@ -81,9 +107,46 @@ class MultiAccountManager(
         isMultiSyncEnabled = if (accountCount > 1) enabled else false
     }
 
+    fun updateDesktopMode(enabled: Boolean) {
+        if (isDesktopMode == enabled) return
+        isDesktopMode = enabled
+        for (idx in 0 until accountCount) {
+            val view = webViews[idx] ?: continue
+            val isCompact = compactFlags[idx] ?: false
+            applyViewSettings(view, idx, isCompact, enabled)
+            val currentUrl = view.url ?: ""
+            if (enabled) {
+                if (currentUrl.contains("://m.facebook.com") || currentUrl.contains("://mbasic.facebook.com")) {
+                    view.loadUrl(
+                        currentUrl
+                            .replace("://m.facebook.com", "://www.facebook.com")
+                            .replace("://mbasic.facebook.com", "://www.facebook.com")
+                    )
+                } else if (currentUrl.isBlank() || currentUrl == "about:blank") {
+                    view.loadUrl(FACEBOOK_DESKTOP_URL)
+                } else {
+                    view.reload()
+                }
+            } else {
+                if (currentUrl.contains("://www.facebook.com") || currentUrl.contains("://web.facebook.com")) {
+                    view.loadUrl(
+                        currentUrl
+                            .replace("://www.facebook.com", "://m.facebook.com")
+                            .replace("://web.facebook.com", "://m.facebook.com")
+                    )
+                } else if (currentUrl.isBlank() || currentUrl == "about:blank") {
+                    view.loadUrl(FACEBOOK_LOGIN_URL)
+                } else {
+                    view.reload()
+                }
+            }
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
-    fun configureWebView(webView: WebView, paneIndex: Int, isCompactWidth: Boolean) {
+    fun configureWebView(webView: SyncWebView, paneIndex: Int, isCompactWidth: Boolean) {
         webViews[paneIndex] = webView
+        compactFlags[paneIndex] = isCompactWidth
 
         // Pane 0 uses Default profile cleanly; Panes 1..3 use isolated named profiles when supported
         if (paneIndex > 0 && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
@@ -109,6 +172,31 @@ class MultiAccountManager(
             cm.setAcceptThirdPartyCookies(webView, true)
         }
 
+        defaultUserAgents[paneIndex] = webView.settings.userAgentString
+        applyViewSettings(webView, paneIndex, isCompactWidth, isDesktopMode)
+
+        webView.onUserTouchEvent = { ev ->
+            if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
+                lastActivePane = paneIndex
+            }
+            mirrorTouchEvent(paneIndex, ev)
+        }
+
+        webView.addJavascriptInterface(
+            NushaSyncBridge(paneIndex) { sourcePane, payloadJson ->
+                handleCapturedJsEvent(sourcePane, payloadJson)
+            },
+            "NushaBridge"
+        )
+    }
+
+    private fun applyViewSettings(
+        webView: SyncWebView,
+        paneIndex: Int,
+        isCompactWidth: Boolean,
+        desktopMode: Boolean
+    ) {
+        val mobileUa = defaultUserAgents[paneIndex] ?: webView.settings.userAgentString
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -118,39 +206,39 @@ class MultiAccountManager(
             builtInZoomControls = true
             displayZoomControls = false
             setSupportZoom(true)
-            useWideViewPort = isCompactWidth
-            loadWithOverviewMode = isCompactWidth
-            textZoom = if (isCompactWidth) 85 else 100
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             cacheMode = WebSettings.LOAD_DEFAULT
+
+            if (desktopMode) {
+                userAgentString = DESKTOP_USER_AGENT
+                useWideViewPort = true
+                loadWithOverviewMode = true
+                textZoom = 100
+            } else {
+                userAgentString = mobileUa
+                useWideViewPort = isCompactWidth
+                loadWithOverviewMode = isCompactWidth
+                textZoom = if (isCompactWidth) 85 else 100
+            }
         }
 
-        if (isCompactWidth) {
-            webView.setInitialScale(72)
-        } else {
-            webView.setInitialScale(0)
+        when {
+            desktopMode -> webView.setInitialScale(0)
+            isCompactWidth -> webView.setInitialScale(72)
+            else -> webView.setInitialScale(0)
         }
-
-        webView.addJavascriptInterface(
-            NushaSyncBridge(paneIndex) { sourcePane, payloadJson ->
-                handleCapturedEvent(sourcePane, payloadJson)
-            },
-            "NushaBridge"
-        )
     }
 
     fun updatePaneDensity(paneIndex: Int, isCompactWidth: Boolean) {
+        compactFlags[paneIndex] = isCompactWidth
         val view = webViews[paneIndex] ?: return
-        view.settings.apply {
-            useWideViewPort = isCompactWidth
-            loadWithOverviewMode = isCompactWidth
-            textZoom = if (isCompactWidth) 85 else 100
-        }
-        view.setInitialScale(if (isCompactWidth) 72 else 0)
+        applyViewSettings(view, paneIndex, isCompactWidth, isDesktopMode)
     }
 
     fun unregisterWebView(paneIndex: Int) {
         webViews.remove(paneIndex)?.destroy()
+        defaultUserAgents.remove(paneIndex)
+        compactFlags.remove(paneIndex)
         paneLoadingProgress.remove(paneIndex)
         paneErrors.remove(paneIndex)
     }
@@ -159,7 +247,37 @@ class MultiAccountManager(
         webView.evaluateJavascript(SYNC_LISTENER_JS, null)
     }
 
-    private fun handleCapturedEvent(sourcePane: Int, payloadJson: String) {
+    private fun mirrorTouchEvent(sourcePane: Int, ev: MotionEvent) {
+        if (!isMultiSyncEnabled || accountCount <= 1) return
+        val sourceView = webViews[sourcePane] ?: return
+        val srcW = sourceView.width
+        val srcH = sourceView.height
+        if (srcW <= 0 || srcH <= 0) return
+
+        for (idx in 0 until accountCount) {
+            if (idx == sourcePane) continue
+            val target = webViews[idx] ?: continue
+            val dstW = target.width
+            val dstH = target.height
+            if (dstW <= 0 || dstH <= 0) continue
+
+            val cloned = MotionEvent.obtain(ev)
+            if (srcW != dstW || srcH != dstH) {
+                val matrix = Matrix()
+                matrix.setScale(dstW.toFloat() / srcW.toFloat(), dstH.toFloat() / srcH.toFloat())
+                cloned.transform(matrix)
+            }
+            target.isReplayingTouch = true
+            try {
+                target.dispatchTouchEvent(cloned)
+            } finally {
+                target.isReplayingTouch = false
+                cloned.recycle()
+            }
+        }
+    }
+
+    private fun handleCapturedJsEvent(sourcePane: Int, payloadJson: String) {
         mainHandler.post {
             lastActivePane = sourcePane
             if (!isMultiSyncEnabled || accountCount <= 1) return@post
@@ -175,12 +293,13 @@ class MultiAccountManager(
     }
 
     fun reloadAll() {
+        val fallback = getInitialUrl()
         for (idx in 0 until accountCount) {
             paneErrors[idx] = null
             val view = webViews[idx]
             if (view != null) {
                 if (view.url.isNullOrBlank() || view.url == "about:blank") {
-                    view.loadUrl(FACEBOOK_LOGIN_URL)
+                    view.loadUrl(fallback)
                 } else {
                     view.reload()
                 }
@@ -192,7 +311,7 @@ class MultiAccountManager(
         paneErrors[paneIndex] = null
         val view = webViews[paneIndex] ?: return
         if (view.url.isNullOrBlank() || view.url == "about:blank") {
-            view.loadUrl(FACEBOOK_LOGIN_URL)
+            view.loadUrl(getInitialUrl())
         } else {
             view.reload()
         }
@@ -249,7 +368,6 @@ class MultiAccountManager(
             }
         }
 
-        // Clear Multi-Profiles (panes 1..3 -> nusha_acc_2..4) if supported
         if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
             try {
                 val store = ProfileStore.getInstance()
@@ -265,14 +383,14 @@ class MultiAccountManager(
             }
         }
 
-        // Also clear default WebStorage & CookieManager
         WebStorage.getInstance().deleteAllData()
         val defaultCookies = CookieManager.getInstance()
         defaultCookies.removeAllCookies {
             defaultCookies.flush()
             mainHandler.post {
+                val homeUrl = getInitialUrl()
                 for (idx in 0 until accountCount) {
-                    webViews[idx]?.loadUrl(FACEBOOK_LOGIN_URL)
+                    webViews[idx]?.loadUrl(homeUrl)
                 }
                 onComplete()
             }
@@ -280,6 +398,8 @@ class MultiAccountManager(
     }
 
     companion object {
+        // Native MotionEvent handles taps, drags, scrolls, and button clicks directly across panes.
+        // JS listener handles text typing, select/checkbox changes, and Enter key submissions.
         private val SYNC_LISTENER_JS = """
             (function() {
                 if (window.__nushaHooked) return;
@@ -310,20 +430,8 @@ class MultiAccountManager(
                     return path.join(' > ');
                 }
 
-                function getHrefPath(el) {
-                    try {
-                        var href = el.getAttribute('href');
-                        if (!href) return '';
-                        var u = new URL(href, location.origin);
-                        return u.pathname + u.search;
-                    } catch (e) {
-                        return el.getAttribute('href') || '';
-                    }
-                }
-
                 function buildDescriptor(el) {
                     if (!el || el.nodeType !== 1) return {};
-                    var rect = el.getBoundingClientRect();
                     var tag = el.tagName.toLowerCase();
                     var role = el.getAttribute('role') || '';
                     var ariaLabel = el.getAttribute('aria-label') || '';
@@ -331,8 +439,6 @@ class MultiAccountManager(
                     var name = el.getAttribute('name') || '';
                     var placeholder = el.getAttribute('placeholder') || '';
                     var type = el.getAttribute('type') || '';
-                    var hrefPath = getHrefPath(el);
-                    var text = (el.innerText || el.textContent || '').trim().slice(0, 60);
                     var inputs = Array.from(document.querySelectorAll(tag));
                     var fieldIndex = inputs.indexOf(el);
                     return {
@@ -344,12 +450,8 @@ class MultiAccountManager(
                         name: name,
                         placeholder: placeholder,
                         inputType: type,
-                        hrefPath: hrefPath,
-                        text: text,
                         selector: getCssPath(el),
-                        fieldIndex: fieldIndex,
-                        xRatio: window.innerWidth > 0 ? (rect.left + rect.width / 2) / window.innerWidth : 0.5,
-                        yRatio: window.innerHeight > 0 ? (rect.top + rect.height / 2) / window.innerHeight : 0.5
+                        fieldIndex: fieldIndex
                     };
                 }
 
@@ -376,19 +478,6 @@ class MultiAccountManager(
                         var byPh = document.querySelector(d.tag + '[placeholder="' + CSS.escape(d.placeholder) + '"]');
                         if (byPh) return byPh;
                     }
-                    if (d.hrefPath && d.tag === 'a') {
-                        var links = document.querySelectorAll('a[href]');
-                        for (var i = 0; i < links.length; i++) {
-                            if (getHrefPath(links[i]) === d.hrefPath) return links[i];
-                        }
-                    }
-                    if (d.text && (d.tag === 'button' || d.tag === 'a' || d.role === 'button' || d.role === 'link')) {
-                        var candidates = document.querySelectorAll('button, a, [role="button"], [role="link"], input[type="submit"], input[type="button"]');
-                        for (var j = 0; j < candidates.length; j++) {
-                            var cText = (candidates[j].innerText || candidates[j].value || '').trim().slice(0, 60);
-                            if (cText === d.text) return candidates[j];
-                        }
-                    }
                     if (d.selector) {
                         try {
                             var bySel = document.querySelector(d.selector);
@@ -398,9 +487,6 @@ class MultiAccountManager(
                     if (typeof d.fieldIndex === 'number' && d.fieldIndex >= 0 && (d.tag === 'input' || d.tag === 'textarea' || d.tag === 'select')) {
                         var list = document.querySelectorAll(d.tag);
                         if (list[d.fieldIndex]) return list[d.fieldIndex];
-                    }
-                    if (typeof d.xRatio === 'number' && typeof d.yRatio === 'number') {
-                        return document.elementFromPoint(d.xRatio * window.innerWidth, d.yRatio * window.innerHeight);
                     }
                     return null;
                 }
@@ -417,24 +503,6 @@ class MultiAccountManager(
                     }
                 }
 
-                // 1. Capture Clicks / Taps
-                document.addEventListener('click', function(e) {
-                    if (window.__nushaReplaying) return;
-                    if (!e.isTrusted) return;
-                    var target = e.target && e.target.closest
-                        ? (e.target.closest('button, a, input, select, textarea, label, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [tabindex]') || e.target)
-                        : e.target;
-                    if (!target) return;
-                    var desc = buildDescriptor(target);
-                    desc.type = 'click';
-                    if (window.innerWidth > 0 && window.innerHeight > 0 && e.clientX && e.clientY) {
-                        desc.xRatio = e.clientX / window.innerWidth;
-                        desc.yRatio = e.clientY / window.innerHeight;
-                    }
-                    NushaBridge.onAction(JSON.stringify(desc));
-                }, true);
-
-                // 2. Capture Text Inputs & Changes
                 function emitInput(e) {
                     if (window.__nushaReplaying) return;
                     var target = e.target;
@@ -452,7 +520,6 @@ class MultiAccountManager(
                 document.addEventListener('input', emitInput, true);
                 document.addEventListener('change', emitInput, true);
 
-                // 3. Capture Enter / Submit
                 document.addEventListener('keydown', function(e) {
                     if (window.__nushaReplaying) return;
                     if (e.key === 'Enter' && e.target) {
@@ -462,37 +529,13 @@ class MultiAccountManager(
                     }
                 }, true);
 
-                // 4. Capture Scroll (throttled)
-                var scrollTimer = null;
-                window.addEventListener('scroll', function() {
-                    if (window.__nushaReplaying) return;
-                    if (scrollTimer) clearTimeout(scrollTimer);
-                    scrollTimer = setTimeout(function() {
-                        var maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-                        var payload = {
-                            type: 'scroll',
-                            yRatio: window.scrollY / maxScroll,
-                            scrollY: window.scrollY
-                        };
-                        NushaBridge.onAction(JSON.stringify(payload));
-                    }, 55);
-                }, true);
-
-                // Replay Handler
                 window.__nushaReplay = function(jsonStr) {
                     try {
                         var data = JSON.parse(jsonStr);
                         window.__nushaReplaying = true;
-                        if (data.type === 'click') {
-                            var el = findElement(data);
-                            if (el) {
-                                if (el.focus) el.focus();
-                                el.click();
-                            }
-                        } else if (data.type === 'input') {
+                        if (data.type === 'input') {
                             var inp = findElement(data);
                             if (inp) {
-                                if (inp.focus) inp.focus();
                                 if (data.isContentEditable) {
                                     inp.innerText = data.value || '';
                                 } else if (inp.type === 'checkbox' || inp.type === 'radio') {
@@ -515,16 +558,12 @@ class MultiAccountManager(
                                     targetEl.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
                                 }
                             }
-                        } else if (data.type === 'scroll') {
-                            var maxTargetScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-                            var targetY = maxTargetScroll > 0 ? Math.round((data.yRatio || 0) * maxTargetScroll) : (data.scrollY || 0);
-                            window.scrollTo({ top: targetY, behavior: 'auto' });
                         }
                     } catch (err) {
                     } finally {
                         setTimeout(function() {
                             window.__nushaReplaying = false;
-                        }, 80);
+                        }, 60);
                     }
                 };
             })();

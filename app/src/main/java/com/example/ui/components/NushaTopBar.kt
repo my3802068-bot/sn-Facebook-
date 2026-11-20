@@ -19,8 +19,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SyncDisabled
 import androidx.compose.material3.DropdownMenu
@@ -28,6 +30,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,8 +52,10 @@ import com.example.ui.theme.FbBlue
 fun NushaTopBar(
     accountCount: Int,
     isMultiSyncEnabled: Boolean,
+    isDesktopMode: Boolean,
     onSelectAccountCount: (Int) -> Unit,
     onSetMultiSync: (Boolean) -> Unit,
+    onToggleDesktopMode: (Boolean) -> Unit,
     onReloadAll: () -> Unit,
     onClearAllData: () -> Unit,
     modifier: Modifier = Modifier
@@ -108,16 +114,19 @@ fun NushaTopBar(
                             fontWeight = FontWeight.Bold,
                             lineHeight = 17.sp
                         )
+                        val modeSuffix = if (isDesktopMode) " • PC" else ""
                         Text(
                             text = if (accountCount == 1) {
-                                "Facebook"
+                                "Facebook$modeSuffix"
                             } else {
-                                "$accountCount Accounts • " + if (isMultiSyncEnabled) "Multi ON" else "Manual OFF"
+                                "$accountCount Accounts • " + (if (isMultiSyncEnabled) "Multi ON" else "Manual OFF") + modeSuffix
                             },
                             color = if (accountCount > 1 && isMultiSyncEnabled) {
                                 Color(0xFF10B981)
                             } else if (accountCount > 1) {
                                 Color(0xFFF59E0B)
+                            } else if (isDesktopMode) {
+                                Color(0xFF60A5FA)
                             } else {
                                 Color(0xFF9CA3AF)
                             },
@@ -191,7 +200,7 @@ fun NushaTopBar(
                             containerColor = Color(0xFF18191C),
                             shape = RoundedCornerShape(14.dp),
                             border = BorderStroke(1.dp, Color(0xFF2D2F36)),
-                            modifier = Modifier.widthIn(min = 248.dp, max = 280.dp)
+                            modifier = Modifier.widthIn(min = 256.dp, max = 290.dp)
                         ) {
                             // 1. Multiple Account (2-4) + 1 Single
                             Column(
@@ -254,35 +263,26 @@ fun NushaTopBar(
                                     .fillMaxWidth()
                                     .padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "Multiple Mode",
-                                            color = Color.White,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = when {
-                                                accountCount == 1 -> "Open 2–4 accounts to sync"
-                                                isMultiSyncEnabled -> "ON: 1 action repeats on all"
-                                                else -> "OFF: Manual touch one by one"
-                                            },
-                                            color = Color(0xFF9CA3AF),
-                                            fontSize = 11.sp
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = "Multiple Mode",
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = when {
+                                        accountCount == 1 -> "Open 2–4 accounts to sync"
+                                        isMultiSyncEnabled -> "ON: 1 action repeats on all"
+                                        else -> "OFF: Manual touch one by one"
+                                    },
+                                    color = Color(0xFF9CA3AF),
+                                    fontSize = 11.sp
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    // OFF (Manual)
                                     val isOff = !isMultiSyncEnabled
                                     Surface(
                                         onClick = {
@@ -310,7 +310,6 @@ fun NushaTopBar(
                                         }
                                     }
 
-                                    // ON (Auto Multi)
                                     val isOn = isMultiSyncEnabled && accountCount > 1
                                     Surface(
                                         onClick = {
@@ -345,7 +344,53 @@ fun NushaTopBar(
 
                             HorizontalDivider(color = Color(0xFF2A2C32))
 
-                            // 3. Reload Button
+                            // 3. Desktop Mode Toggle
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .clickable {
+                                        onToggleDesktopMode(!isDesktopMode)
+                                        menuExpanded = false
+                                    }
+                                    .padding(horizontal = 14.dp)
+                                    .testTag("menu_desktop_mode_toggle"),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = if (isDesktopMode) Icons.Default.DesktopWindows else Icons.Default.Smartphone,
+                                        contentDescription = "Desktop Mode",
+                                        tint = if (isDesktopMode) Color(0xFF60A5FA) else Color(0xFFD1D5DB),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "Desktop Mode",
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                Switch(
+                                    checked = isDesktopMode,
+                                    onCheckedChange = { checked ->
+                                        onToggleDesktopMode(checked)
+                                        menuExpanded = false
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = FbBlue,
+                                        uncheckedThumbColor = Color(0xFF9CA3AF),
+                                        uncheckedTrackColor = Color(0xFF2B2E36)
+                                    )
+                                )
+                            }
+
+                            HorizontalDivider(color = Color(0xFF2A2C32))
+
+                            // 4. Reload Button
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -373,7 +418,7 @@ fun NushaTopBar(
                                 )
                             }
 
-                            // 4. Clear Data Button
+                            // 5. Clear Data Button
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()

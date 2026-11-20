@@ -154,6 +154,7 @@ fun NushaLiteApp() {
             NushaTopBar(
                 accountCount = manager.accountCount,
                 isMultiSyncEnabled = manager.isMultiSyncEnabled,
+                isDesktopMode = manager.isDesktopMode,
                 onSelectAccountCount = { count ->
                     manager.updateAccountCount(count)
                     coroutineScope.launch {
@@ -172,6 +173,17 @@ fun NushaLiteApp() {
                             "Multi Sync ON: Actions in 1 page mirror to all"
                         } else {
                             "Manual Mode (OFF): Tap each page individually"
+                        }
+                        snackbarHostState.showSnackbar(msg)
+                    }
+                },
+                onToggleDesktopMode = { enabled ->
+                    manager.updateDesktopMode(enabled)
+                    coroutineScope.launch {
+                        val msg = if (enabled) {
+                            "Desktop Mode ON (PC Facebook)"
+                        } else {
+                            "Mobile Mode ON"
                         }
                         snackbarHostState.showSnackbar(msg)
                     }
@@ -228,30 +240,24 @@ fun NushaLiteApp() {
                         }
                     }
                     3 -> {
+                        // 3 equal-dimension stacked panes so touch & scroll coordinates match 1:1
                         Column(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Row(
+                            Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    .fillMaxWidth()
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                ) {
-                                    paneContents[0](3, true)
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                ) {
-                                    paneContents[1](3, true)
-                                }
+                                paneContents[0](3, false)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                paneContents[1](3, false)
                             }
                             Box(
                                 modifier = Modifier
